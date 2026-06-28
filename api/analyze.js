@@ -8,7 +8,6 @@ export default async function handler(req, res) {
   try {
     const { bazi } = req.body;
 
-    // 第一步：让模型做计算
     const calcResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -47,9 +46,9 @@ export default async function handler(req, res) {
 驱动模式：食神/伤官=输出型 / 正财/偏财/正官/七杀=掌控型 / 正印/偏印/比肩/劫财=内核型
 
 【地支状态规则】
-已显化：该地支有天干透出（含日主）且该天干有根（全盘有同五行地支）→ 人群前30%稳定能力
-潜力：该地支有对应五行但无天干透出 → 待激活
-空白：某五行既无天干也无地支 → 能量缺失
+已显化：该地支有天干透出（含日主）且该天干有根（全盘有同五行地支）
+潜力：该地支有对应五行但无天干透出
+空白：某五行既无天干也无地支
 
 【做工关系】
 天干五合（合激活·持续稳定）：甲己 乙庚 丙辛 丁壬 戊癸
@@ -85,7 +84,6 @@ CHONG: [天干冲情况，无则写无]`,
     const calcData = await calcResponse.json();
     const calcText = calcData.content?.[0]?.text || '';
 
-    // 第二步：让模型基于计算结果生成JSON和解读
     const outputResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -96,7 +94,15 @@ CHONG: [天干冲情况，无则写无]`,
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 2000,
-        system: '你是八字能量报告生成器。根据计算结果生成JSON报告。只输出JSON，第一个字符必须是{，不输出任何其他文字。',
+        system: `你是八字能量报告生成器。根据计算结果生成JSON报告。只输出JSON，第一个字符必须是{，不输出任何其他文字。
+
+【renqun字段规则——严格执行，不得自行调整】
+已显化的十神：
+- 非土五行 → 一律写"前30%"
+- 土五行 → 一律写"前50%"
+潜力状态 → 写"待激活"
+空白 → 写"缺失"
+禁止根据得分高低自行推算概率数字`,
         messages: [{
           role: 'user',
           content: `根据以下计算结果，生成JSON报告：
