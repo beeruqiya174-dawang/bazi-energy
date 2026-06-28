@@ -30,12 +30,23 @@ export default async function handler(req, res) {
     
     // 提取JSON
     const text = data.content?.[0]?.text || '';
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) {
-      res.status(200).json({ result: match[0] });
-    } else {
-      res.status(200).json({ result: text });
-    }
+const match = text.match(/\{[\s\S]*\}/);
+const jsonStr = match ? match[0] : text;
+
+// 解析并补全缺失字段
+try {
+  const parsed = JSON.parse(jsonStr);
+  if (!parsed.shishen_list) parsed.shishen_list = [];
+  if (!parsed.kongbai) parsed.kongbai = [];
+  if (!parsed.gongzuo) parsed.gongzuo = { he: [], chong_tg: [] };
+  if (!parsed.gongzuo.he) parsed.gongzuo.he = [];
+  if (!parsed.gongzuo.chong_tg) parsed.gongzuo.chong_tg = [];
+  if (!parsed.neihao) parsed.neihao = { zhi: 0, dengji: '', yuanyin: '' };
+  if (!parsed.wuxing) parsed.wuxing = {};
+  res.status(200).json({ result: JSON.stringify(parsed) });
+} catch(e) {
+  res.status(200).json({ result: jsonStr });
+} 
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
