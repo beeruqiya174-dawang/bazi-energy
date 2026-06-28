@@ -147,6 +147,12 @@ function render(r,i){
   const ly=Math.round(r.nengliang_liyong*100),nh=Math.round(r.neihao.zhi*100);
   const tc=r.neihao.dengji==='低内耗'?'tl':r.neihao.dengji==='中内耗'?'tm':'th';
   const wx=Object.entries(r.wuxing).sort((a,b)=>b[1]-a[1]),mw=wx[0]?.[1]||.001;
+if(!r.shishen_list)r.shishen_list=[];
+if(!r.gongzuo)r.gongzuo={he:[],chong_tg:[]};
+if(!r.gongzuo.he)r.gongzuo.he=[];
+if(!r.gongzuo.chong_tg)r.gongzuo.chong_tg=[];
+if(!r.kongbai)r.kongbai=[];
+if(!r.wuxing)r.wuxing={};
   const ss=(r.shishen_list||[]).filter(s=>s.defen>0).sort((a,b)=>b.defen-a.defen),ms=ss[0]?.defen||.001;
   const he=(r.gongzuo?.he||[]).filter(h=>h.zuhe),ct=(r.gongzuo?.chong_tg||[]).filter(c=>c.zuhe),kb=r.kongbai||[];
   document.getElementById('ri').innerHTML=`
