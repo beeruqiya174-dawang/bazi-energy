@@ -334,7 +334,7 @@ async function callAPI(inputs) {
   const resp=await fetch('/api/analyze',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,system:SYSTEM_PROMPT,messages:[{role:'user',content:userMsg}]})
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,messages:[{role:'user',content:userMsg}]})
   });
   if(!resp.ok){ const err=await resp.json().catch(()=>({})); throw new Error(err.error?.message||`HTTP ${resp.status}`); }
   const data=await resp.json();
