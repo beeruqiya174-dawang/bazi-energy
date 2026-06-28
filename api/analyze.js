@@ -65,9 +65,18 @@ export default async function handler(req, res) {
       })
     });
 
-    const data = await response.json();
-    res.status(response.status).json(data);
-  } catch (e) {
+const data = await response.json();
+
+// 强制提取JSON
+if (data.content && data.content[0] && data.content[0].text) {
+  const text = data.content[0].text;
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    data.content[0].text = jsonMatch[0];
+  }
+}
+
+res.status(response.status).json(data);  } catch (e) {
     res.status(500).json({ error: e.message });
   }
 }
