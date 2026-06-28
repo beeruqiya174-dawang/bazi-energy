@@ -68,4 +68,106 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--ink)
 .sr{padding:10px 0;border-bottom:.5px solid var(--bg2)}
 .sr:last-child{border-bottom:none;padding-bottom:0}
 .st{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-.sn{font-size:14px;font-weight:500}.stags{display:fle
+.sn{font-size:14px;font-weight:500}.stags{display:flex;gap:5px;align-items:center}.sp{font-size:12px;color:var(--ink3)}
+.sbw{height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;margin-bottom:5px}
+.sbf{height:100%;background:var(--ink3);border-radius:2px;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
+.sn2{font-size:11px;color:var(--ink3)}
+.gi{padding:12px 0;border-bottom:.5px solid var(--bg2)}
+.gi:last-child{border-bottom:none;padding-bottom:0}
+.gh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.gz{font-family:'Noto Serif SC',serif;font-size:14px;font-weight:500}
+.gd{font-size:12px;color:var(--ink3);margin-bottom:5px}.gx{font-size:13px;color:var(--ink2);line-height:1.7}
+.narr{font-size:15px;line-height:2}
+.bas{display:flex;gap:8px;margin-top:1.5rem}
+.ba{flex:1;padding:13px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:13px;font-family:'Noto Sans SC',sans-serif;color:var(--ink2);cursor:pointer}
+.ba:hover{background:var(--bg2)}
+.br{padding:13px 16px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:13px;font-family:'Noto Sans SC',sans-serif;color:var(--ink3);cursor:pointer}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;z-index:100}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="screen active" id="s-input">
+  <div class="brand"><h1>能量图谱</h1><div class="gold-line"></div><p>冰山下的性格能量解码</p></div>
+  <div class="form-box">
+    <label class="fl">四柱八字</label>
+    <div class="hint">输入你的八字，天干地支各一格</div>
+    <div class="pgrid">
+      <div class="pcol"><div class="pname">年柱</div><div class="pinputs"><div class="prl">天干</div><input class="pi" id="n-tg" maxlength="1" placeholder="甲"><div class="prl">地支</div><input class="pi" id="n-dz" maxlength="1" placeholder="寅"></div></div>
+      <div class="pcol"><div class="pname">月柱</div><div class="pinputs"><div class="prl">天干</div><input class="pi" id="y-tg" maxlength="1" placeholder="己"><div class="prl">地支</div><input class="pi" id="y-dz" maxlength="1" placeholder="巳"></div></div>
+      <div class="pcol"><div class="pname">日柱</div><div class="pinputs"><div class="prl">天干</div><input class="pi" id="r-tg" maxlength="1" placeholder="丙"><div class="prl">地支</div><input class="pi" id="r-dz" maxlength="1" placeholder="子"></div></div>
+      <div class="pcol"><div class="pname">时柱</div><div class="pinputs"><div class="prl">天干</div><input class="pi" id="s-tg" maxlength="1" placeholder="壬"><div class="prl">地支</div><input class="pi" id="s-dz" maxlength="1" placeholder="辰"></div></div>
+    </div>
+    <div class="ex">示例：<span onclick="fill('甲','寅','己','巳','丙','子','壬','辰')">甲寅 己巳 丙子 壬辰</span></div>
+    <button class="btn" onclick="go()">解读我的能量图谱</button>
+    <div class="err" id="err"></div>
+  </div>
+</div>
+<div class="screen" id="s-loading">
+  <div class="glyph" id="gl">命</div>
+  <div class="steps">
+    <div class="step" id="ls1"><div class="dot"></div>排盘 · 定日主</div>
+    <div class="step" id="ls2"><div class="dot"></div>计算先天能量底色</div>
+    <div class="step" id="ls3"><div class="dot"></div>推演做工关系与动能转化</div>
+    <div class="step" id="ls4"><div class="dot"></div>生成能量解读</div>
+  </div>
+</div>
+<div class="screen" id="s-result"><div class="ri" id="ri"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const TG=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const DZ=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const WC={火:'#c94a2a',水:'#2a5fac',木:'#3a7a3a',金:'#6a6a6a',土:'#8a6a2a'};
+let saved=null,lt=null;
+function fill(a,b,c,d,e,f,g,h){['n-tg','n-dz','y-tg','y-dz','r-tg','r-dz','s-tg','s-dz'].forEach((id,i)=>{document.getElementById(id).value=[a,b,c,d,e,f,g,h][i];});}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function val(){const fs=[{id:'n-tg',l:TG},{id:'n-dz',l:DZ},{id:'y-tg',l:TG},{id:'y-dz',l:DZ},{id:'r-tg',l:TG},{id:'r-dz',l:DZ},{id:'s-tg',l:TG},{id:'s-dz',l:DZ}];for(const f of fs){const v=document.getElementById(f.id).value.trim();if(!v||!f.l.includes(v))return false;}return true;}
+function inp(){return['n-tg','n-dz','y-tg','y-dz','r-tg','r-dz','s-tg','s-dz'].map(id=>document.getElementById(id).value.trim());}
+function startAnim(){const gs=['命','格','局','象','道','气','运','化','玄','机'],ss=['ls1','ls2','ls3','ls4'];let gi=0,si=0;document.getElementById('gl').textContent=gs[0];ss.forEach(s=>{const e=document.getElementById(s);e.classList.remove('active','done');});document.getElementById(ss[0]).classList.add('active');lt=setInterval(()=>{gi=(gi+1)%gs.length;document.getElementById('gl').textContent=gs[gi];if(gi%3===0&&si<ss.length-1){document.getElementById(ss[si]).classList.remove('active');document.getElementById(ss[si]).classList.add('done');si++;document.getElementById(ss[si]).classList.add('active');}},700);}
+function stopAnim(){if(lt)clearInterval(lt);['ls1','ls2','ls3','ls4'].forEach(s=>{document.getElementById(s).classList.remove('active');document.getElementById(s).classList.add('done');});}
+async function go(){
+  const err=document.getElementById('err');err.style.display='none';
+  if(!val()){err.textContent='请检查八字——天干：甲乙丙丁戊己庚辛壬癸；地支：子丑寅卯辰巳午未申酉戌亥';err.style.display='block';return;}
+  const [ntg,ndz,ytg,ydz,rtg,rdz,stg,sdz]=inp();
+  const bazi=`年柱${ntg}${ndz} 月柱${ytg}${ydz} 日柱${rtg}${rdz} 时柱${stg}${sdz}`;
+  show('s-loading');startAnim();
+  try{
+    const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bazi})});
+    const data=await resp.json();
+    if(data.error)throw new Error(data.error);
+    const r=JSON.parse(data.result);
+    saved={r,inputs:{ntg,ndz,ytg,ydz,rtg,rdz,stg,sdz}};
+    stopAnim();render(r,saved.inputs);show('s-result');window.scrollTo(0,0);
+  }catch(e){stopAnim();show('s-input');err.textContent='解析出错：'+e.message;err.style.display='block';}
+}
+function bc(z,j){if(j==='合激活')return 'the';if(j==='冲激活')return 'tch';if(z==='已显化')return 'tx';return 'tq';}
+function bt(z,j){if(j==='合激活')return '合激活·持续稳定';if(j==='冲激活')return '冲激活·脉冲爆发';if(z==='已显化')return '已显化·前30%';return '潜力待激活';}
+function render(r,i){
+  const ly=Math.round(r.nengliang_liyong*100),nh=Math.round(r.neihao.zhi*100);
+  const tc=r.neihao.dengji==='低内耗'?'tl':r.neihao.dengji==='中内耗'?'tm':'th';
+  const wx=Object.entries(r.wuxing).sort((a,b)=>b[1]-a[1]),mw=wx[0]?.[1]||.001;
+  const ss=(r.shishen_list||[]).filter(s=>s.defen>0).sort((a,b)=>b.defen-a.defen),ms=ss[0]?.defen||.001;
+  const he=(r.gongzuo?.he||[]).filter(h=>h.zuhe),ct=(r.gongzuo?.chong_tg||[]).filter(c=>c.zuhe),kb=r.kongbai||[];
+  document.getElementById('ri').innerHTML=`
+    <div class="rh">
+      <div class="pdisplay">${[['年柱',i.ntg,i.ndz],['月柱',i.ytg,i.ydz],['日柱',i.rtg,i.rdz],['时柱',i.stg,i.sdz]].map(([l,t,d])=>`<div class="pc"><div class="pcl">${l}</div><div class="pcg">${t}<br>${d}</div></div>`).join('')}</div>
+      <div class="rg">${r.gejuming}</div>
+      <div class="rbs"><span class="rb">${r.qudongmoshi}</span><span class="rb">${r.gejuli}</span><span class="rb">日主 ${r.rizhu}</span></div>
+      <div class="rl"></div>
+    </div>
+    <div class="card"><div class="ct">先天能量底色</div>${wx.map(([n,v])=>`<div class="er"><div class="en" style="color:${WC[n]}">${n}</div><div class="ew"><div class="ef" style="width:${Math.round(v/mw*100)}%;background:${WC[n]}"></div></div><div class="ep">${Math.round(v*100)}%</div></div>`).join('')}${kb.length?`<div style="margin-top:10px;font-size:12px;color:var(--ink4)">空白缺失：${kb.join('、')}</div>`:''}</div>
+    <div class="card"><div class="ct">能量利用率 · 内耗</div><div class="ur"><span class="ul">能量利用率</span><span class="uv">${ly}%</span></div><div class="ur"><span class="ul">内耗值</span><span class="uv">${nh}% <span class="tag ${tc}">${r.neihao.dengji}</span></span></div><div class="ur"><span class="ul">内耗来源</span><span class="uv" style="font-weight:400;color:var(--ink2)">${r.neihao.yuanyin}</span></div></div>
+    <div class="card"><div class="ct">十神驱动力 · 实际能力</div>${ss.map(s=>`<div class="sr"><div class="st"><span class="sn">${s.shishen}</span><div class="stags"><span class="tag ${bc(s.zhuangtai,s.jihuo_type)}">${bt(s.zhuangtai,s.jihuo_type)}</span><span class="sp">${Math.round(s.defen*100)}%</span></div></div><div class="sbw"><div class="sbf" style="width:${Math.round(s.defen/ms*100)}%"></div></div><div class="sn2">实际能力：${s.shiji_nengli} · ${s.renqun}</div></div>`).join('')}</div>
+    ${(he.length||ct.length)?`<div class="card"><div class="ct">做工关系 · 动能转化</div>${he.map(h=>`<div class="gi"><div class="gh"><span class="gz">${h.zuhe}</span><span class="tag the">合·持续稳定</span></div><div class="gd">${h.gaoneng_ss} 带动 ${h.dineng_ss}</div><div class="gx">${h.fuzhetezhi}</div></div>`).join('')}${ct.map(c=>`<div class="gi"><div class="gh"><span class="gz">${c.zuhe}</span><span class="tag tch">冲·脉冲爆发</span></div><div class="gd">${c.zhudong_ss} 主动冲击 ${c.beidong_ss}</div><div class="gx">${c.biaoxian}</div></div>`).join('')}</div>`:''}
+    <div class="card"><div class="ct">能量解读</div><div class="narr">${r.jieda}</div></div>
+    <div class="bas"><button class="ba" onclick="cp()">复制解读</button><button class="ba" onclick="sh()">分享图谱</button><button class="br" onclick="restart()">重测</button></div>`;
+}
+function cp(){if(!saved)return;const r=saved.r,i=saved.inputs;navigator.clipboard.writeText(`【能量图谱】${i.ntg}${i.ndz} ${i.ytg}${i.ydz} ${i.rtg}${i.rdz} ${i.stg}${i.sdz}\n\n格局：${r.gejuming}·${r.qudongmoshi}\n能量利用率：${Math.round(r.nengliang_liyong*100)}%·${r.neihao.dengji}\n\n${r.jieda}`).then(()=>toast('已复制'));}
+function sh(){if(!saved)return;const r=saved.r;const t=`我的能量图谱：${r.gejuming}·${r.qudongmoshi}\n\n${r.jieda.slice(0,100)}...`;if(navigator.share)navigator.share({title:'能量图谱',text:t});else navigator.clipboard.writeText(t).then(()=>toast('已复制分享内容'));}
+function restart(){saved=null;document.getElementById('err').style.display='none';show('s-input');window.scrollTo(0,0);}
+['n-tg','y-tg','r-tg','s-tg'].forEach(id=>{document.getElementById(id).addEventListener('input',function(){this.classList.toggle('v',TG.includes(this.value));this.classList.toggle('i',this.value&&!TG.includes(this.value));});});
+['n-dz','y-dz','r-dz','s-dz'].forEach(id=>{document.getElementById(id).addEventListener('input',function(){this.classList.toggle('v',DZ.includes(this.value));this.classList.toggle('i',this.value&&!DZ.includes(this.value));});});
+</script>
+</body>
+</html>
