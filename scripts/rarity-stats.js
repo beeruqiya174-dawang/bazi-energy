@@ -1,15 +1,17 @@
 /**
- * 稀有度真实分布计算 —— 全排列组合枚举
+ * 能量转化分布计算 —— 全排列组合枚举
  *
  * 原理：四柱命盘的合法组合总数是确定的：
  *   年柱 60（干支同阳阴配对）× 月支 12（月干由五虎遁唯一确定）
  *   × 日柱 60 × 时支 12（时干由五鼠遁唯一确定）
  *   = 518,400 个不同命盘。
  *
- * 对每一个命盘跑确定性引擎，统计 (格局力度 × 做工系统数) 的真实分布，
- * 得到各稀有度档位的精确概率——不是拍脑袋查表，是算出来的。
+ * 对每一个命盘跑确定性引擎，统计 (转化效率 ECE × 转化功率) 的联合分布，
+ * 引擎内置的 ECE_POWER_GRID 即由此生成。稀有度 = 帕累托头部占比：
+ * 同时达到「效率≥你 且 功率≥你」的命盘占比（含同档）。
  *
  * 运行：node scripts/rarity-stats.js
+ * 规则改动后必须重跑本脚本并核对内置表。
  */
 
 const BaziEngine = require('../lib/bazi.js');
@@ -45,98 +47,75 @@ function hourStem(dayStem, hourBranch) {
 
 function main() {
   const pillars60 = allPillars();
-  const total = 60 * 12 * 60 * 12;
-  console.log(`合法命盘总数（排列组合）：${total.toLocaleString()}`);
-
-  // 统计器
-  const tier = { '0': 0, '1': 0, '2': 0, '3+': 0 };            // 做工系统数
-  const tierDage = { '0': 0, '1': 0, '2': 0, '3+': 0 };         // 其中大格
-  const gejuliDist = { '大格': 0, '中格': 0, '弱格': 0 };
-  const gejuMingDist = {};
-  const xiduyouDist = {};
-  const cellDist = {};                                           // gejuli|nSystems 联合分布
+  const G = 20; // 与引擎内置 ECE_POWER_GRID 相同粒度
+  const grid = Array.from({ length: G }, () => new Array(G).fill(0));
+  const eceTenth = new Array(10).fill(0); // 0.1 一档的形态统计
   let count = 0;
   const t0 = Date.now();
 
   for (const yp of pillars60) {                 // 年柱 60
     const ys = TG.indexOf(yp.tg);
     for (let mb = 0; mb < 12; mb++) {           // 月支 12（月干五虎遁确定）
-      const ms = monthStem(ys, mb);
-      const mp = { tg: ms, dz: DZ[mb] };
+      const mp = { tg: monthStem(ys, mb), dz: DZ[mb] };
       for (const dp of pillars60) {             // 日柱 60
         const ds = TG.indexOf(dp.tg);
         for (let hb = 0; hb < 12; hb++) {       // 时支 12（时干五鼠遁确定）
-          const hs = hourStem(ds, hb);
-          const sp = { tg: hs, dz: DZ[hb] };
+          const sp = { tg: hourStem(ds, hb), dz: DZ[hb] };
           const { result } = BaziEngine.analyze({ n: yp, y: mp, r: dp, s: sp });
-
-          const n = result.xitong_list.length;
-          const key = n >= 3 ? '3+' : String(n);
-          tier[key]++;
-          if (result.gejuli === '大格') tierDage[key]++;
-          gejuliDist[result.gejuli]++;
-          gejuMingDist[result.gejuming] = (gejuMingDist[result.gejuming] || 0) + 1;
-          xiduyouDist[result.xiduyou] = (xiduyouDist[result.xiduyou] || 0) + 1;
-          const ck = result.gejuli + '|' + n;
-          cellDist[ck] = (cellDist[ck] || 0) + 1;
+          const e = Math.min(G - 1, Math.floor(result.zhuanhua_xiaolv * G));
+          const p = Math.min(G - 1, Math.floor(Math.min(1, result.zhuanhua_nengliang) * G));
+          grid[e][p]++;
+          eceTenth[Math.min(9, Math.floor(result.zhuanhua_xiaolv * 10))]++;
           count++;
         }
       }
     }
   }
 
-  const pct = (x) => (100 * x / count).toFixed(4) + '%';
-  const ms = Date.now() - t0;
-  console.log(`枚举完成：${count.toLocaleString()} 个命盘，耗时 ${(ms / 1000).toFixed(1)}s\n`);
+  console.log(`枚举完成：${count.toLocaleString()} 个命盘，耗时 ${((Date.now() - t0) / 1000).toFixed(1)}s\n`);
+  const pct = (x) => (100 * x / count).toFixed(2) + '%';
 
-  console.log('══ 工况分布（V5.5 旧查表 vs 真实计算）══');
-  console.log('档位                 旧查表值      真实占比      命盘数');
-  const rows = [
-    ['大格 + ≥2系统', '前0.1%', tierDage['2'] + tierDage['3+'], '千里挑一'],
-    ['≥2系统(非大格)', '约1%',  tier['2'] + tier['3+'] - tierDage['2'] - tierDage['3+'], '极稀有'],
-    ['恰1系统',        '约3%-5%', tier['1'], '稀有'],
-    ['0系统',          '约20%',  tier['0'], '基础'],
-  ];
-  for (const [name, lookup, real] of rows) {
-    console.log(`${name.padEnd(18)} ${lookup.padEnd(12)} ${pct(real).padEnd(12)} ${real.toLocaleString()}`);
+  console.log('══ ECE 分布形态（0.1 一档）══');
+  for (let g = 0; g < 10; g++) {
+    console.log(`${(g / 10).toFixed(1)}-${((g + 1) / 10).toFixed(1)}: ${pct(eceTenth[g])}`);
   }
 
-  console.log('\n══ 交叉验证：按当前 xiduyou 输出分桶 ══');
-  for (const [k, v] of Object.entries(xiduyouDist)) console.log(`${pct(v).padEnd(10)} ${v.toLocaleString().padStart(8)}  ${k}`);
-
-  console.log('\n══ 格局力度分布 ══');
-  for (const [k, v] of Object.entries(gejuliDist)) console.log(`${k}：${pct(v)}（${v.toLocaleString()}）`);
-
-  console.log('\n══ 十格分布 ══');
-  for (const [k, v] of Object.entries(gejuMingDist).sort((a, b) => b[1] - a[1])) {
-    console.log(`${k}：${pct(v)}（${v.toLocaleString()}）`);
+  // 帕累托头部占比门槛
+  const dom = (e, p) => {
+    let c = 0;
+    for (let i = e; i < G; i++) for (let j = p; j < G; j++) c += grid[i][j];
+    return c / count;
+  };
+  console.log('\n══ 帕累托头部门槛（同时达到该效率与功率的占比）══');
+  for (const [e, p] of [[19, 19], [19, 18], [19, 16], [18, 11], [16, 12], [12, 10], [10, 6], [0, 0]]) {
+    console.log(`ECE≥${(e / G).toFixed(2)} 且 功率≥${(p / G).toFixed(2)}: ${(dom(e, p) * 100).toFixed(2)}%`);
   }
 
-  // 大格&2系统以上的人群前占比（从高到低累计）
-  const dage2 = tierDage['2'] + tierDage['3+'];
-  const ge2 = tier['2'] + tier['3+'];
-  console.log('\n══ 关键累计占比（"人群前X%"的严格含义）══');
-  console.log(`达到 ≥2 系统（含大格）：前 ${(100 * ge2 / count).toFixed(3)}%`);
-  console.log(`大格 + ≥2 系统：      前 ${(100 * dage2 / count).toFixed(3)}%`);
-  console.log(`至少 1 系统：         前 ${(100 * (count - tier['0']) / count).toFixed(2)}%`);
+  // 黄金用例
+  console.log('\n══ 黄金用例 ══');
+  for (const [name, bazi] of [['大王', '甲寅 己巳 丙子 壬辰'], ['薛相公', '甲申 壬申 乙巳 戊寅']]) {
+    const r = BaziEngine.analyze(bazi).result;
+    console.log(`${name}: ECE=${r.zhuanhua_xiaolv} 功率=${r.zhuanhua_nengliang} → ${r.xiduyou}`);
+  }
 
-  // ══ 一致性校验：实时枚举 vs 引擎内置 RARITY_COUNTS ══
-  const embedded = BaziEngine.RARITY_COUNTS;
+  // ══ 一致性校验：实时枚举 vs 引擎内置 ECE_POWER_GRID ══
+  const embedded = BaziEngine.ECE_POWER_GRID;
   if (embedded) {
     let mismatch = 0;
-    const keys = new Set([...Object.keys(cellDist), ...Object.keys(embedded)]);
-    for (const k of keys) {
-      const live = cellDist[k] || 0;
-      const emb = embedded[k] || 0;
-      if (live !== emb) {
-        mismatch++;
-        console.log(`\n⚠️ 不一致 ${k}：枚举=${live} 内置=${emb}`);
+    for (let i = 0; i < G; i++) {
+      for (let j = 0; j < G; j++) {
+        if (grid[i][j] !== embedded[i][j]) {
+          mismatch++;
+          console.log(`⚠️ 不一致 [${i}][${j}]：枚举=${grid[i][j]} 内置=${embedded[i][j]}`);
+        }
       }
     }
     if (mismatch === 0) {
-      console.log('\n✅ 一致性校验通过：引擎内置 RARITY_COUNTS 与实时全枚举完全一致（' + keys.size + ' 个格子）');
+      console.log('\n✅ 一致性校验通过：引擎内置 ECE_POWER_GRID 与实时全枚举完全一致（20×20 网格）');
     } else {
-      console.log(`\n❌ ${mismatch} 个格子不一致——规则已改动，需用本次枚举结果更新 lib/bazi.js 的 RARITY_COUNTS！`);
+      console.log(`\n❌ ${mismatch} 个格子不一致——规则已改动，需用本次枚举结果更新 lib/bazi.js 的 ECE_POWER_GRID！`);
+      console.log('新表：');
+      console.log(JSON.stringify(grid));
       process.exitCode = 1;
     }
   }

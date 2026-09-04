@@ -55,13 +55,16 @@ test('案例一：甲寅 己巳 丙子 壬辰（用户本人基准八字）', ()
   assert.strictEqual(result.gongzuo.chong_tg[0].zuhe, '丙壬');
   assert.deepStrictEqual(result.gongzuo.chong_dz, []);
 
-  // 完整格局与稀有度（数学计算：大格+2系统 → 占11.4%，累计前23.4%）
+  // 完整格局（仅描述用）与能量转化效率（ECE=转化能量/捕获能量）
   assert.strictEqual(result.wanzheng_geju, '建禄格·伤官佩印·杀制群比');
   assert.strictEqual(result.gejuli, '大格');
-  assert.strictEqual(result.xiduyou, '属于人群前23.4%的少见格局（该组合在518,400种命盘中占11.4%）');
+  assert.strictEqual(result.zhuanhua_nengliang, 0.8);
+  assert.strictEqual(result.zhuanhua_xiaolv, 1);
+  // 稀有度：ECE×功率帕累托（全枚举518,400盘中仅6.5%同时达到效率100%与功率0.8）
+  assert.strictEqual(result.xiduyou, '能量转化综合评级「高效转化」：转化效率100%×转化功率0.8，518,400盘全枚举中仅6.5%同时达到，位于人群前6.5%');
   assert.deepStrictEqual(result.xiduyou_data, {
-    gejuli: '大格', xitong_shu: 2, dengji: '少见',
-    zhanbi: 0.1141, qianfenbi: 0.2344, mingpan_zongshu: 518400
+    zhuanhua_xiaolv: 1, zhuanhua_gonglv: 0.8, toubu_zhanbi: 0.0648,
+    dengji: '高效转化', mingpan_zongshu: 518400
   });
 
   // 空白五行：金虽无得分，但巳中藏庚金，不为空白
@@ -95,8 +98,10 @@ test('案例二：甲申 壬申 乙巳 戊寅（子平真诠·薛相公命）', 
   // 地支寅申冲
   assert.ok(result.gongzuo.chong_dz.some(c => c.zuhe === '寅申'));
 
-  // 稀有度（数学计算：大格+1系统 → 占38.3%，累计前61.7%）
-  assert.strictEqual(result.xiduyou, '属于人群前61.7%的常见格局（该组合在518,400种命盘中占38.3%）');
+  // 转化效率与稀有度（ECE=0.902 功率=0.55 → 前19.8%）
+  assert.strictEqual(result.zhuanhua_xiaolv, 0.902);
+  assert.strictEqual(result.zhuanhua_nengliang, 0.55);
+  assert.strictEqual(result.xiduyou, '能量转化综合评级「中高转化」：转化效率90.2%×转化功率0.55，518,400盘全枚举中仅19.8%同时达到，位于人群前19.8%');
 });
 
 test('输入解析与防御', () => {
@@ -154,24 +159,40 @@ test('确定性：同一八字两次计算结果完全一致', () => {
   assert.deepStrictEqual(a.result, b.result);
 });
 
-test('稀有度数学表：总和恰为518,400（60年×12月×60日×12时）', () => {
-  const { RARITY_COUNTS, TOTAL_CHARTS } = require('../lib/bazi.js');
-  const sum = Object.values(RARITY_COUNTS).reduce((a, b) => a + b, 0);
-  assert.strictEqual(sum, TOTAL_CHARTS, `稀有度表总和 ${sum} ≠ ${TOTAL_CHARTS}，表与全枚举不一致`);
+test('转化分布表：20×20网格总和恰为518,400（60年×12月×60日×12时）', () => {
+  const { ECE_POWER_GRID, TOTAL_CHARTS } = require('../lib/bazi.js');
+  assert.strictEqual(ECE_POWER_GRID.length, 20);
+  for (const row of ECE_POWER_GRID) {
+    assert.strictEqual(row.length, 20);
+    for (const v of row) assert.ok(Number.isInteger(v) && v >= 0, `非法计数 ${v}`);
+  }
+  const sum = ECE_POWER_GRID.flat().reduce((a, b) => a + b, 0);
+  assert.strictEqual(sum, TOTAL_CHARTS, `分布表总和 ${sum} ≠ ${TOTAL_CHARTS}，表与全枚举不一致`);
   assert.strictEqual(TOTAL_CHARTS, 518400);
 });
 
-test('稀有度数学表：所有计数非负，档位单调（占例越大累计占比越大）', () => {
-  const { RARITY_COUNTS, TOTAL_CHARTS } = require('../lib/bazi.js');
-  for (const [k, v] of Object.entries(RARITY_COUNTS)) {
-    assert.ok(Number.isInteger(v) && v >= 0, `非法计数 ${k}=${v}`);
+test('转化分布表：帕累托头部占比随效率/功率桶单调不增', () => {
+  const { ECE_POWER_GRID, TOTAL_CHARTS } = require('../lib/bazi.js');
+  const dom = (e, p) => {
+    let c = 0;
+    for (let i = e; i < 20; i++) for (let j = p; j < 20; j++) c += ECE_POWER_GRID[i][j];
+    return c;
+  };
+  for (let e = 0; e < 20; e++) {
+    for (let p = 0; p < 20; p++) {
+      if (e < 19) assert.ok(dom(e, p) >= dom(e + 1, p), `单调性破坏 e=${e} p=${p}`);
+      if (p < 19) assert.ok(dom(e, p) >= dom(e, p + 1), `单调性破坏 e=${e} p=${p}`);
+    }
   }
-  // 累计占比（不大于自身计数的格子之和）必须随自身计数单调不减
-  const cum = (c) => Object.values(RARITY_COUNTS).filter(x => x <= c).reduce((a, b) => a + b, 0);
-  const sorted = Object.values(RARITY_COUNTS).filter(v => v > 0).sort((a, b) => a - b);
-  for (let i = 1; i < sorted.length; i++) {
-    assert.ok(cum(sorted[i]) >= cum(sorted[i - 1]), '累计占比不单调');
+  assert.strictEqual(dom(0, 0), TOTAL_CHARTS);
+});
+
+test('转化能量恒不超过捕获能量，ECE 恒在0-1之间', () => {
+  const cases = ['甲寅 己巳 丙子 壬辰', '甲申 壬申 乙巳 戊寅', '庚戌 戊子 庚申 庚辰', '癸亥 甲子 壬寅 壬寅', '甲子 甲子 甲子 甲子'];
+  for (const c of cases) {
+    const { result } = analyze(c);
+    assert.ok(result.zhuanhua_nengliang <= result.nengliang_liyong + 1e-9, `${c} 转化能量超过捕获能量`);
+    assert.ok(result.zhuanhua_xiaolv >= 0 && result.zhuanhua_xiaolv <= 1, `${c} ECE越界: ${result.zhuanhua_xiaolv}`);
   }
-  assert.strictEqual(cum(sorted[sorted.length - 1]), TOTAL_CHARTS);
 });
 

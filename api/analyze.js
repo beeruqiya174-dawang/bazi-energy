@@ -68,6 +68,8 @@ function buildUserPrompt(result) {
       zhuangtai: s.zhuangtai, renqun: s.renqun
     })),
     nengliang_liyong: result.nengliang_liyong,
+    zhuanhua_nengliang: result.zhuanhua_nengliang,
+    zhuanhua_xiaolv: result.zhuanhua_xiaolv,
     neihao: result.neihao,
     kongbai: result.kongbai,
     shengke_zhuxian: result.shengke_zhuxian,
