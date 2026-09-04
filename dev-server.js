@@ -24,13 +24,13 @@ const server = http.createServer(async (req, res) => {
     req.body = body;
     req.startTime = Date.now();
     // 适配 Vercel 风格的 res.status().json() 链式接口
-    const resAdapter = Object.create(res);
-    resAdapter.status = function (code) { this.statusCode = code; return this; };
-    resAdapter.json = function (data) {
+    // 注意：不能用 Object.create(res) 委托——Node 22 下 end() 会静默失效（响应永远不发出）
+    res.status = function (code) { this.statusCode = code; return this; };
+    res.json = function (data) {
       this.setHeader('Content-Type', 'application/json; charset=utf-8');
       this.end(JSON.stringify(data));
     };
-    return handler(req, resAdapter);
+    return handler(req, res);
   }
 
   let file = url === '/' ? '/index.html' : url;
