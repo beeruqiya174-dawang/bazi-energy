@@ -70,6 +70,7 @@ function buildUserPrompt(result) {
     nengliang_liyong: result.nengliang_liyong,
     zhuanhua_nengliang: result.zhuanhua_nengliang,
     zhuanhua_xiaolv: result.zhuanhua_xiaolv,
+    zhuanhua_cengci: result.zhuanhua_cengci,
     neihao: result.neihao,
     kongbai: result.kongbai,
     shengke_zhuxian: result.shengke_zhuxian,
@@ -168,6 +169,21 @@ function templateJieda(r) {
   }
   const nh = r.neihao;
   parts.push(`不过，你的能量利用率约${Math.round(r.nengliang_liyong * 100)}%，属于${nh.dengji}——${nh.yuanyin}。${nh.dengji === '低内耗' ? '损耗很小，几乎全力以赴。' : '识别这个来源，是提效的第一步。'}`);
+  // 转化层次（世俗标准）
+  const cc = r.zhuanhua_cengci;
+  if (cc) {
+    const ccText = {
+      '财官双全': '已转化的能量中财官两路皆通——利禄与功名双通道，世俗成就的配置最全。',
+      '官贵之途': '已转化的能量走的是官杀一路——功名、权位与责任感是能量变现的主通道。',
+      '财富之路': '已转化的能量走的是财路——务实积累与资源变现是主通道。',
+      '内在通达': '已转化的能量全部流向内在通道（才学、表达与同侪）——成就在己不在势位，世俗功名需要额外搭桥。',
+      '能量未转化': '能量尚未进入任何做工通道，先解决"有没有通道"的问题。'
+    };
+    parts.push(ccText[cc.cengci] || '');
+    if (cc.cengci !== '能量未转化' && cc.cengci !== '财官双全') {
+      parts.push(`世俗通道能量占已转化的${Math.round((cc.shisu_zhanbi || 0) * 100)}%。`);
+    }
+  }
   if (r.kongbai.length) parts.push(`${r.kongbai.join('、')}在你的盘面中缺失，这个维度需要借助外部补足。`);
   if (r.rizhu_qiangruo === '身弱') parts.push('日主根气偏弱，纵有好局也需先稳住自身，补根是长期功课。');
   return parts.filter(Boolean).join('');
