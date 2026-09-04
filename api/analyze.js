@@ -1,279 +1,255 @@
-export default async function handler(req, res) {
+'use strict';
+
+/**
+ * /api/analyze — 能量图谱分析接口（V6 架构）
+ *
+ * 架构（去 Claude 化、可控）：
+ *   1. 计算层：lib/bazi.js 纯代码引擎（确定性规则，毫秒级，零成本，永不失败）
+ *   2. 叙事层：把结构化结果写成 300 字解读 —— OpenAI 兼容接口，供应商可切换
+ *      （DeepSeek / 通义千问 / GLM / Kimi / Anthropic 均支持，按可用 key 顺序自动故障切换）
+ *   3. 兜底：所有叙事供应商失败时，用确定性模板生成解读，产品永不白屏
+ *
+ * 环境变量（在 Vercel 项目 Settings → Environment Variables 配置，只需配你有的）：
+ *   DEEPSEEK_API_KEY     DeepSeek（https://platform.deepseek.com）
+ *   DASHSCOPE_API_KEY    通义千问（https://dashscope.console.aliyun.com）
+ *   ZHIPU_API_KEY        智谱 GLM（https://open.bigmodel.cn）
+ *   MOONSHOT_API_KEY     Kimi（https://platform.moonshot.cn）
+ *   ANTHROPIC_API_KEY    Anthropic（可选回退）
+ *   NARRATIVE_PROVIDER   强制指定首选供应商（deepseek/qwen/zhipu/moonshot/anthropic）
+ */
+
+const BaziEngine = require('../lib/bazi.js');
+
+// ── 叙事供应商注册表（全部 OpenAI 兼容 chat/completions）──
+const PROVIDERS = {
+  deepseek: {
+    url: 'https://api.deepseek.com/chat/completions',
+    model: 'deepseek-chat',
+    keyEnv: 'DEEPSEEK_API_KEY'
+  },
+  qwen: {
+    url: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    model: 'qwen-plus',
+    keyEnv: 'DASHSCOPE_API_KEY'
+  },
+  zhipu: {
+    url: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    model: 'glm-4-flash',
+    keyEnv: 'ZHIPU_API_KEY'
+  },
+  moonshot: {
+    url: 'https://api.moonshot.cn/v1/chat/completions',
+    model: 'moonshot-v1-8k',
+    keyEnv: 'MOONSHOT_API_KEY'
+  }
+};
+
+const NARRATIVE_SYSTEM = `你是能量图谱的解读撰写者。你会收到一份已由确定性引擎算好的八字分析 JSON，你的唯一任务：把它写成一段约300字的解读文字。
+
+规则：
+- 第二人称「你」，有洞察力，让人感觉「说的就是我」，不能是星座式泛泛而谈
+- 结构：先讲能量如何运转（生克主线），再讲做工系统如何激活实际能力，最后点出内耗来源
+- 不罗列数据，不出现百分比数字，要有叙事张力，避免「你是一个……的人」句式
+- 若存在伤官佩印：必须点明「见印才是经世聪明，洞察力与创造力并存，发明创造解决问题的奇才」
+- 若存在杀制群比：必须点明「外部压力是激活剂，遇强则强，脉冲式爆发」
+- 若存在官印相生或财官印顺生：结合日主强弱——有根则点明「身根稳固，受生有力」；无根则点明身弱隐忧与补根方向
+- 只输出解读正文，不加标题、不加引号、不换行、不加任何格式符号`;
+
+function buildUserPrompt(result) {
+  const slim = {
+    rizhu: result.rizhu,
+    rizhu_qiangruo: result.rizhu_qiangruo,
+    geju: result.wanzheng_geju,
+    gejuli: result.gejuli,
+    xiduyou: result.xiduyou,
+    wuxing: result.wuxing,
+    shishen: result.shishen_list.map(s => ({
+      shishen: s.shishen, laiyuan: s.laiyuan, defen: s.defen,
+      zhuangtai: s.zhuangtai, renqun: s.renqun
+    })),
+    nengliang_liyong: result.nengliang_liyong,
+    neihao: result.neihao,
+    kongbai: result.kongbai,
+    shengke_zhuxian: result.shengke_zhuxian,
+    xitong_list: result.xitong_list,
+    gongzuo: result.gongzuo
+  };
+  return `八字分析结果JSON：\n${JSON.stringify(slim, null, 1)}\n\n请写出jieda解读文字。`;
+}
+
+async function callOpenAICompatible(provider, apiKey, userPrompt) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
+  try {
+    const resp = await fetch(provider.url, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: provider.model,
+        temperature: 0.7,
+        max_tokens: 800,
+        messages: [
+          { role: 'system', content: NARRATIVE_SYSTEM },
+          { role: 'user', content: userPrompt }
+        ]
+      })
+    });
+    if (!resp.ok) {
+      const errBody = await resp.text().catch(() => '');
+      throw new Error(errBody || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    const text = data?.choices?.[0]?.message?.content || '';
+    if (!text.trim()) throw new Error('空响应');
+    return text.trim().replace(/^["「『]|["」』]$/g, '');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function callAnthropic(apiKey, userPrompt) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 800,
+        system: NARRATIVE_SYSTEM,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+    if (!resp.ok) {
+      const errBody = await resp.text().catch(() => '');
+      throw new Error(errBody || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    const text = (data?.content || []).map(c => c.text || '').join('');
+    if (!text.trim()) throw new Error('空响应');
+    return text.trim();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ── 兜底：确定性模板解读（零 LLM，永不失败）──
+function templateJieda(r) {
+  const parts = [];
+  const dm = { 输出型: '你的能量以输出见长，表达与创造是最自然的通道。',
+    掌控型: '你的能量以掌控见长，目标与秩序驱动你前行。',
+    内核型: '你的能量向内沉淀，靠体系与认知积累立足。' };
+  parts.push(`你的命盘以${r.gejuming}为底色，${r.gejuli}月令坐镇，${dm[r.qudongmoshi] || ''}`);
+
+  if (r.shengke_zhuxian.length) {
+    parts.push(`能量沿${r.shengke_zhuxian.join('、')}的主线流转，各环节互为滋养。`);
+  }
+  for (const sys of r.xitong_list) {
+    if (sys === '伤官佩印') parts.push('伤官与印星联动，见印才是经世聪明——洞察力与创造力并存，是发明创造、解决问题的奇才。');
+    else if (sys === '杀制群比') parts.push('七杀冲击比劫，外部压力是你的激活剂，遇强则强，呈脉冲式爆发。');
+    else if (sys === '财官印顺生') parts.push('财官印三者顺生，资源、地位与智慧形成良性循环，是难得的高配置。');
+    else if (sys === '官印相生') parts.push('官印相生，自律与学识互相成就，文贵之象。');
+    else if (sys === '食神制杀') parts.push('食神制杀，以技术与果敢驯服压力，适合硬核专业路线。');
+    else if (sys === '财生官') parts.push('财星滋生官星，资源在向地位与影响力转化。');
+    else if (sys === '伤官生财') parts.push('伤官生财，爆发力极强的输出直接变现。');
+    else if (sys === '财印双清') parts.push('财印双清，资源与智慧并行不悖。');
+  }
+  const nh = r.neihao;
+  parts.push(`不过，你的能量利用率约${Math.round(r.nengliang_liyong * 100)}%，属于${nh.dengji}——${nh.yuanyin}。${nh.dengji === '低内耗' ? '损耗很小，几乎全力以赴。' : '识别这个来源，是提效的第一步。'}`);
+  if (r.kongbai.length) parts.push(`${r.kongbai.join('、')}在你的盘面中缺失，这个维度需要借助外部补足。`);
+  if (r.rizhu_qiangruo === '身弱') parts.push('日主根气偏弱，纵有好局也需先稳住自身，补根是长期功课。');
+  return parts.filter(Boolean).join('');
+}
+
+// ── 主入口（CommonJS：Vercel 与本地 Node 均可直接运行）──
+async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  res.setHeader('Cache-Control', 'no-store');
+  if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+  if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
+  let body = {};
+  try { body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {}); }
+  catch (e) { body = {}; }
+
+  const baziInput = body.bazi || '';
+
+  // 1. 计算层：纯代码引擎（永不失败、毫秒级）
+  let engineOut;
   try {
-    const { bazi } = req.body;
-
-    const calcResponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 3000,
-        system: `你是八字能量计算引擎。严格按步骤计算，禁止使用规则集以外的任何概念。
-
-【基础对照表】
-天干五行阴阳：甲=阳木 乙=阴木 丙=阳火 丁=阴火 戊=阳土 己=阴土 庚=阳金 辛=阴金 壬=阳水 癸=阴水
-
-地支主气：子=癸水 丑=己土 寅=甲木 卯=乙木 辰=戊土 巳=丙火 午=丁火 未=己土 申=庚金 酉=辛金 戌=戊土 亥=壬水
-
-【强制规则：五行存在性判断必须逐一核对】
-判断某五行是否存在于全盘（影响空白判断、天干有根判断），必须严格执行以下步骤，不得跳过：
-1. 逐一列出四个地支各自的完整藏干（年支、月支、日支、时支，每个都要列出全部藏干，不只是主气）
-2. 将四组藏干合并成一张完整列表
-3. 在这张完整列表中查找目标五行
-4. 只有四个地支的全部藏干都不含该五行，才能判定为"空白"或"无根"
-禁止仅凭主气或部分记忆判断某五行不存在，必须逐一核对藏干表后才能下结论
-
-【地支藏干完整表（计算时必须逐一引用，不可省略任何一项）】
-子：癸水
-丑：己土、癸水、辛金
-寅：甲木、丙火、戊土
-卯：乙木
-辰：戊土、乙木、癸水
-巳：丙火、庚金、戊土
-午：丁火、己土
-未：己土、丁火、乙木
-申：庚金、壬水、戊土
-酉：辛金
-戌：戊土、辛金、丁火
-亥：壬水、甲木
-
-五行生克：木生火 火生土 土生金 金生水 水生木 / 木克土 土克水 水克火 火克金 金克木
-
-【十神判断（以日主为基准）——必须拆成四步，不能跳步直接给结论】
-每次判断一个天干或地支主气的十神，必须按以下四步写出：
-步骤1：日主五行+阴阳 = [X阳/阴X]
-步骤2：目标五行+阴阳 = [X阳/阴X]
-步骤3：生克关系 = [生我/我生/克我/我克/同我]
-步骤4：阴阳是否相同 = [同/异]
-结论：[十神名称]
-
-对照表（严格按此执行，不能跳步）：
-生我+同阴阳=偏印 / 生我+异阴阳=正印
-我生+同阴阳=食神 / 我生+异阴阳=伤官
-克我+同阴阳=七杀 / 克我+异阴阳=正官
-我克+同阴阳=偏财 / 我克+异阴阳=正财
-同我+同阴阳=比肩 / 同我+异阴阳=劫财
-
-【能量计算】
-地支权重：月令45% 时支30% 日支15% 年支10%
-衰减系数（月令五行为基准）：同气=1.0 月令所生=0.9 生月令=0.5 克月令=0.2 月令所克=0.1
-天干系数判断（只看五行不分阴阳，甲乙同木 丙丁同火 戊己同土 庚辛同金 壬癸同水）：
-  - 全盘任意地支（主气或藏干）含同五行 → 1.0
-  - 同柱地支（主气或藏干）生该天干五行 → 0.6
-  - 以上都不满足 → 0.3
-日主天干也算透干
-地支得分 = 权重 × 衰减系数 × 天干系数
-能量利用率 = 四地支得分之和
-内耗 = 1.0 - 利用率
-
-【重要：天干有根判断升级】
-判断天干是否有根，必须查全盘所有地支的藏干表，不只看主气。
-例：壬水透干，全盘地支有申，申藏壬水 → 壬水有根，天干系数=1.0
-例：戊土透干，全盘地支有寅，寅藏戊土 → 戊土有根，天干系数=1.0
-例：丙火透干，全盘地支有巳，巳藏丙火 → 丙火有根，天干系数=1.0
-
-【地支状态判断】
-已显化：该地支主气五行有天干透出（含日主），且该天干有根（全盘地支主气或藏干含同五行）
-潜力：该地支主气五行无天干透出
-空白：某五行既无天干也无地支（主气或藏干均无）
-
-【生克主线识别（做工系统第一层）】
-识别命盘中存在的能量流转路径：
-财生官：财星天干透出且有根 + 官星天干透出且有根 → 财滋官，官格有力
-官生印：官星天干透出且有根 + 印星天干透出且有根 → 官印相生
-财官印顺生：三者同时成立 → 最高格局配置
-食伤生财：食神/伤官天干透出且有根 + 财星透出有根 → 输出变现
-杀印相生：七杀透出有根 + 印星透出有根 → 化杀为用
-食神制杀：食神透出有根 + 七杀透出有根 → 技术制压
-
-【天干合冲——强制穷举所有天干对，不能跳步或凭记忆】
-天干五合：甲己 乙庚 丙辛 丁壬 戊癸
-天干六冲：甲庚 乙辛 丙壬 丁癸
-
-必须把四个天干两两配对，逐对检查是否在合/冲列表里：
-格式：[天干A] × [天干B] → 查五合表：[是/否] → 查六冲表：[是/否]
-共6对：年干×月干、年干×日干、年干×时干、月干×日干、月干×时干、日干×时干
-全部6对都必须检查，不能只写有合冲的那几对，没有合冲也要明确写"无"
-
-合：将两个能量绑定，持续联动，改变各自流向
-冲：强方激活弱方，脉冲式改变流向
-
-【日主强弱判断——独立维度，影响格局是否成立】
-查全盘所有地支（含主气和藏干），统计日主五行的根：
-- 日主五行=某地支主气 → 强根（该柱）
-- 日主五行=某地支藏干（非主气）→ 弱根（该柱）
-- 统计强根数+弱根数，得到日主总体根气
-
-日主强弱分级：
-- 2个及以上强根，或强根+多个弱根 → 日主身强
-- 1个强根，或2-3个弱根无强根 → 日主中和
-- 0个强根且0-1个弱根 → 日主身弱
-
-日主强弱对格局的影响（关键）：
-- 官印相生格：日主必须有根才能承载印的滋养（印生身，身要能担）。若日主无根，纵有印护，仍是"身弱官旺"的隐忧格局，需指出此弱点
-- 食伤生财格：日主需有一定根气才能担起输出
-- 杀印相生格：日主无根则杀旺身弱更需印护，格局打折扣
-- 日主有根时：印生身效果完整，格局判定为"身根稳固，受生有力"
-- 日主无根时：纵然其他生克链完整，仍需在解读中点明"身弱"这一隐忧，并指出何种五行/十神可补此弱点
-
-【重要】判断日主强弱必须独立于其他十神得分计算，单独检查全盘地支（含藏干）中是否存在日主同五行
-第一层：月令主气对日主的十神 → 底色格局名
-格局名只能用：正官格 七杀格 正印格 偏印格 食神格 伤官格 正财格 偏财格 建禄格 月劫格
-
-第二层：做工系统
-先识别生克主线（财生官、官生印等），再识别合冲对主线的影响
-做工系统名只能用：
-官印相生 财生官 财官印顺生 伤官佩印 食神制杀 杀印相生 食伤生财 伤官生财 杀制群比
-对应不上以上名称则不写做工系统
-
-第三层：格局力度
-大格：月令得分≥0.35 / 中格：0.20-0.34 / 弱格：<0.20
-
-【格局稀有度（基于格局完整度）】
-无做工系统 → 约20%基础格局
-1套做工系统 → 约3%-5%稀有格局
-2套做工系统 → 约1%极稀有格局
-大格+2套及以上 → 人群前0.1%千里挑一格局
-
-【十神心性（解读素材）】
-比肩：义气自信、能扛事、善竞争。负面：盲目自大
-劫财：目的性强、投机赌性。配官杀则贵。负面：见利忘义
-食神：乐观豁达、情商高、共情强。负面：空想少行
-伤官：思维敏捷、创新开拓。见印才是经世聪明。负面：攻击性强
-正财：执行力强、诚信务实。负面：吝啬算计
-偏财：慷慨轻财、投机敢为。负面：虚浮缺节制
-正官：自律公正、使命感。负面：刻板僵死
-七杀：果断迅猛、目标导向。有制则得用。负面：偏激叛逆
-正印：聪颖仁慈、喜思善学。负面：保守固执
-偏印：逆向思维、直觉强、才思独特。负面：孤僻多疑
-
-输出格式：
-RIZHU: [日主/五行阴阳]
-YUELING_DIZHI: [月令地支/主气五行]
-YUELING_SHISHEN: [月令主气对日主十神]
-SHUAIJIAN: 火=X 土=X 木=X 水=X 金=X
-
-CANGGAN_QINGDIAN: [逐一列出四柱地支的完整藏干，格式：年支X藏[X,X,X] 月支X藏[X,X,X] 日支X藏[X,X,X] 时支X藏[X,X,X]，必须列全]
-
-NIANZHI: [地支] 主气=[X] 藏干=[X] 权重=0.10 衰减=[X] 天干=[X] 天干有根=[是/否，说明依据] 天干系数=[X] 得分=[X]
-YUEZHI: [地支] 主气=[X] 藏干=[X] 权重=0.45 衰减=[X] 天干=[X] 天干有根=[是/否，说明依据] 天干系数=[X] 得分=[X]
-RIZHI: [地支] 主气=[X] 藏干=[X] 权重=0.15 衰减=[X] 天干=[日主X] 天干有根=[是] 天干系数=[X] 得分=[X]
-SHIZHI: [地支] 主气=[X] 藏干=[X] 权重=0.30 衰减=[X] 天干=[X] 天干有根=[是/否，说明依据] 天干系数=[X] 得分=[X]
-
-WUXING_TOTAL: 火=X 土=X 木=X 水=X 金=X
-NENGLIANG_LIYONG: [合计]
-NEIHAO: [1.0-合计]
-
-SHISHEN_CALC: [对每个天干和地支主气，按四步法写出十神判断过程，格式：
-  [天干/地支主气X] 步骤1:日主=[阳/阴X] 步骤2:目标=[阳/阴X] 步骤3:生克=[X] 步骤4:阴阳=[同/异] → 结论=[十神]]
-
-SHISHEN_DIZHI: [地支主气十神列表：十神=X 得分=X 状态=X]
-SHISHEN_TIANGAN: [有根天干十神列表：十神=X 状态=已显化]
-
-SHENGKE_MAIN: [识别生克主线流转路径，如：财（戊）生官（庚）→ 官（庚）生印（壬）→ 财官印顺生成立]
-HECHONG_PAIRS: [强制列出全部6对天干组合及合冲判断结果，格式：年干×月干=[合/冲/无] 年干×日干=[合/冲/无] 年干×时干=[合/冲/无] 月干×日干=[合/冲/无] 月干×时干=[合/冲/无] 日干×时干=[合/冲/无]]
-HECHONG_RESULT: [列出所有有效合冲，及其对生克主线的影响]
-
-RIZHU_QIANGRUO: [日主强弱判断：统计全盘强根弱根数量，给出身强/中和/身弱结论及依据]
-
-LAYER1: [底色格局名]
-LAYER2: [做工系统，对应不上白名单则写：无做工系统]
-LAYER3: [格局力度]
-GEJUMING_FULL: [完整格局]
-XIYOUDU: [稀有度]`,
-        messages: [{ role: 'user', content: `计算八字：${bazi}` }]
-      })
-    });
-
-    const calcData = await calcResponse.json();
-    const calcText = calcData.content?.[0]?.text || '';
-
-    const outputResponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2500,
-        system: `你是八字能量报告生成器。根据计算结果生成JSON。只输出JSON，第一个字符必须是{。
-
-【严格规则】
-1. gejuming使用GEJUMING_FULL完整格局描述
-2. xiyoudu使用XIYOUDU稀有度描述
-3. renqun：已显化非土=前30% 已显化土=前50% 潜力=待激活 禁止自行调整
-4. shishen_list：地支主气十神（defen=实际得分）和有根天干透出十神（defen=0）分开列出
-5. jieda禁止出现引号或特殊字符，只用普通文字
-6. 解读重点：先讲生克主线（能量如何流转），再讲合冲影响，最后讲内耗
-7. 若有伤官必须点明：见印才是经世聪明
-8. 若官印相生/财官印顺生，必须结合RIZHU_QIANGRUO判断：日主有根则点明"身根稳固，受生有力"；日主无根则点明"身弱"这一隐忧，并指出需何种五行补根`,
-        messages: [{
-          role: 'user',
-          content: `根据以下计算结果生成JSON报告：
-
-${calcText}
-
-输出格式：
-{
-  "rizhu": "",
-  "gejuming": "",
-  "qudongmoshi": "",
-  "gejuli": "",
-  "xiyoudu": "",
-  "wuxing": {"火":0.0,"土":0.0,"木":0.0,"水":0.0,"金":0.0},
-  "shishen_list": [
-    {"shishen":"","defen":0.0,"zhuangtai":"已显化","jihuo_type":"","renqun":"前30%","shiji_nengli":"强"}
-  ],
-  "nengliang_liyong": 0.0,
-  "neihao": {"zhi":0.0,"dengji":"","yuanyin":""},
-  "kongbai": [],
-  "gongzuo": {
-    "he": [{"zuhe":"","gaoneng_ss":"","dineng_ss":"","fuzhetezhi":""}],
-    "chong_tg": [{"zuhe":"","zhudong_ss":"","beidong_ss":"","biaoxian":""}]
-  },
-  "jieda": ""
-}`
-        }]
-      })
-    });
-
-    const outputData = await outputResponse.json();
-    const outputText = outputData.content?.[0]?.text || '';
-    const match = outputText.match(/\{[\s\S]*\}/);
-    let jsonStr = match ? match[0] : outputText;
-
-    jsonStr = jsonStr
-      .replace(/[\u0000-\u001F\u007F]/g, ' ')
-      .replace(/,\s*([}\]])/g, '$1');
-
-    try {
-      const parsed = JSON.parse(jsonStr);
-      parsed.shishen_list = Array.isArray(parsed.shishen_list) ? parsed.shishen_list : [];
-      parsed.kongbai = Array.isArray(parsed.kongbai) ? parsed.kongbai : [];
-      parsed.wuxing = parsed.wuxing || {};
-      parsed.gongzuo = parsed.gongzuo || {};
-      parsed.gongzuo.he = Array.isArray(parsed.gongzuo.he) ? parsed.gongzuo.he : [];
-      parsed.gongzuo.chong_tg = Array.isArray(parsed.gongzuo.chong_tg) ? parsed.gongzuo.chong_tg : [];
-      parsed.neihao = parsed.neihao || { zhi: 0, dengji: '', yuanyin: '' };
-      parsed.xiyoudu = parsed.xiyoudu || '';
-      res.status(200).json({ result: JSON.stringify(parsed), calc: calcText });
-    } catch(e) {
-      res.status(200).json({ result: jsonStr, calc: calcText, error: e.message });
-    }
-
+    engineOut = BaziEngine.analyze(baziInput);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(400).json({
+      error: e.message || '八字输入无效',
+      hint: '格式示例：年柱甲寅 月柱己巳 日柱丙子 时柱壬辰'
+    });
+    return;
   }
+
+  const { calc, result } = engineOut;
+
+  // 2. 叙事层：按顺序尝试可用供应商
+  const order = [];
+  const preferred = process.env.NARRATIVE_PROVIDER;
+  if (preferred && PROVIDERS[preferred]) order.push(preferred);
+  for (const name of Object.keys(PROVIDERS)) if (!order.includes(name)) order.push(name);
+
+  let jieda = '';
+  let providerUsed = 'template';
+  const attempts = [];
+
+  for (const name of order) {
+    const key = process.env[PROVIDERS[name].keyEnv];
+    if (!key) continue;
+    try {
+      jieda = await callOpenAICompatible(PROVIDERS[name], key, buildUserPrompt(result));
+      providerUsed = name;
+      break;
+    } catch (e) {
+      attempts.push(`${name}: ${String(e.message).slice(0, 120)}`);
+    }
+  }
+  // Anthropic 可选回退
+  if (!jieda && process.env.ANTHROPIC_API_KEY) {
+    try {
+      jieda = await callAnthropic(process.env.ANTHROPIC_API_KEY, buildUserPrompt(result));
+      providerUsed = 'anthropic';
+    } catch (e) {
+      attempts.push(`anthropic: ${String(e.message).slice(0, 120)}`);
+    }
+  }
+
+  // 3. 兜底模板（无任何 key 或全部失败）
+  if (!jieda) {
+    jieda = templateJieda(result);
+    providerUsed = 'template';
+  }
+
+  result.jieda = jieda.replace(/["\n\r]/g, '');
+
+  res.status(200).json({
+    calc,
+    result,
+    meta: {
+      engine: 'bazi-engine-v6-deterministic',
+      narrative_provider: providerUsed,
+      narrative_fallbacks: attempts,
+      duration_ms: Date.now() - (req.startTime || 0)
+    }
+  });
 }
+
+module.exports = handler;
+module.exports.default = handler;

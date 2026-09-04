@@ -1,375 +1,874 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>能量图谱</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<title>能量图谱 · 冰山下的性格解码</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--ink:#1a1a1a;--ink2:#4a4a4a;--ink3:#8a8a8a;--ink4:#b8b8b8;--bg:#fafaf8;--bg2:#f2f1ee;--border:#e0deda;--gold:#9a7a3a;--gold-l:#f5edd6;--fire:#c94a2a;--water:#2a5fac;--wood:#3a7a3a;--metal:#6a6a6a;--earth:#8a6a2a;--purple:#5a4a9a;--pl:#eeedfe;--gl:#e1f5ee;--gn:#0f6e56;--al:#faeeda;--am:#854f0b;--cl:#faece7;--co:#993c1d}
-body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
-.screen{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1.5rem}
-.screen.active{display:flex}
-#s-result{justify-content:flex-start;padding:0}
-.brand{text-align:center;margin-bottom:2.5rem}
-.brand h1{font-family:'Noto Serif SC',serif;font-size:32px;font-weight:600;letter-spacing:.12em}
-.gold-line{width:32px;height:1px;background:var(--gold);margin:.75rem auto}
-.brand p{font-size:13px;color:var(--ink3);letter-spacing:.06em}
-.form-box{width:100%;max-width:440px}
-.fl{font-size:11px;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;display:block}
-.hint{font-size:12px;color:var(--ink3);text-align:center;margin-bottom:1rem;line-height:1.7}
-.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:8px}
-.pcol{text-align:center}
-.pname{font-size:11px;color:var(--ink3);margin-bottom:6px}
-.pinputs{display:flex;flex-direction:column;gap:5px}
-.prl{font-size:10px;color:var(--ink4);margin-bottom:2px;text-align:left;padding-left:2px}
-.pi{width:100%;text-align:center;font-family:'Noto Serif SC',serif;font-size:20px;padding:10px 4px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--ink);outline:none;transition:border-color .2s,background .2s}
-.pi:focus{border-color:var(--gold);background:var(--gold-l)}
-.pi.v{border-color:var(--wood)}.pi.i{border-color:var(--co)}
-.ex{font-size:11px;color:var(--ink4);text-align:center;margin-bottom:1.5rem}
-.ex span{display:inline-block;background:var(--bg2);padding:4px 10px;border-radius:99px;cursor:pointer;margin:2px}
-.ex span:hover{background:var(--border)}
-.btn{width:100%;padding:15px;background:var(--ink);color:#fff;border:none;border-radius:10px;font-size:15px;font-family:'Noto Sans SC',sans-serif;letter-spacing:.06em;cursor:pointer;margin-top:1rem}
-.btn:hover{opacity:.85}
-.err{margin-top:1rem;padding:12px 14px;background:var(--cl);border-radius:8px;font-size:13px;color:var(--co);line-height:1.6;display:none}
-#s-loading .glyph{font-family:'Noto Serif SC',serif;font-size:64px;color:var(--gold);animation:breathe 2s ease-in-out infinite;margin-bottom:2rem}
-@keyframes breathe{0%,100%{opacity:.2;transform:scale(.95)}50%{opacity:1;transform:scale(1.05)}}
-.steps{display:flex;flex-direction:column;gap:10px}
-.step{font-size:13px;color:var(--ink4);transition:color .4s;display:flex;align-items:center;justify-content:center;gap:8px}
-.step.active{color:var(--ink2)}.step.done{color:var(--gold)}
-.dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
-.ri{max-width:600px;width:100%;margin:0 auto;padding:2rem 1.25rem 5rem}
-.rh{text-align:center;padding:1.5rem 0 2rem}
-.pdisplay{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.5rem}
-.pc{text-align:center;background:var(--bg2);border-radius:8px;padding:10px 4px;border:1px solid var(--border)}
-.pcl{font-size:10px;color:var(--ink3);margin-bottom:4px}
-.pcg{font-family:'Noto Serif SC',serif;font-size:20px;line-height:1.5}
-.rg{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:600;margin-bottom:8px;line-height:1.4}
-.rbs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:.5rem}
-.rb{display:inline-block;font-size:12px;padding:4px 12px;border-radius:99px;border:1px solid var(--gold);color:var(--gold)}
-.xiyoudu-box{margin:10px auto 0;display:inline-block;background:var(--gold-l);border:1px solid var(--gold);border-radius:8px;padding:6px 16px;font-size:12px;color:var(--gold)}
-.rl{width:32px;height:1px;background:var(--gold);margin:1rem auto 0}
-.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:.875rem}
-.ct{font-size:11px;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.1rem;display:flex;align-items:center;gap:8px}
-.ct::after{content:'';flex:1;height:.5px;background:var(--border)}
-.er{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:.5px solid var(--bg2)}
-.er:last-child{border-bottom:none}
-.en{font-family:'Noto Serif SC',serif;font-size:16px;font-weight:600;width:22px;text-align:center}
-.ew{flex:1;height:6px;background:var(--bg2);border-radius:3px;overflow:hidden}
-.ef{height:6px;border-radius:3px}
-.ep{font-size:12px;color:var(--ink3);width:34px;text-align:right}
-.ur{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-bottom:.5px solid var(--bg2);font-size:13px;gap:12px}
-.ur:last-child{border-bottom:none}
-.ul{color:var(--ink2);flex-shrink:0}.uv{font-weight:500;text-align:right}
-.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:middle}
-.tl{background:var(--gl);color:var(--gn)}.tm{background:var(--al);color:var(--am)}.th{background:var(--cl);color:var(--co)}
-.tx{background:var(--pl);color:var(--purple)}.the{background:var(--gl);color:var(--gn)}.tch{background:var(--al);color:var(--am)}
-.tq{background:var(--bg2);color:var(--ink3);border:.5px solid var(--border)}
-.sr{padding:10px 0;border-bottom:.5px solid var(--bg2)}
-.sr:last-child{border-bottom:none;padding-bottom:0}
-.st{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-.sn{font-size:14px;font-weight:500}.stags{display:flex;gap:5px;align-items:center}.sp{font-size:12px;color:var(--ink3)}
-.sbw{height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;margin-bottom:5px}
-.sbf{height:100%;background:var(--ink3);border-radius:2px}
-.sn2{font-size:11px;color:var(--ink3)}
-.gi{padding:12px 0;border-bottom:.5px solid var(--bg2)}
-.gi:last-child{border-bottom:none;padding-bottom:0}
-.gh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.gz{font-family:'Noto Serif SC',serif;font-size:14px;font-weight:500}
-.gd{font-size:12px;color:var(--ink3);margin-bottom:5px}.gx{font-size:13px;color:var(--ink2);line-height:1.7}
-.narr{font-size:15px;line-height:2}
-.bas{display:flex;gap:8px;margin-top:1.5rem}
-.ba{flex:1;padding:13px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:13px;font-family:'Noto Sans SC',sans-serif;color:var(--ink2);cursor:pointer}
-.ba:hover{background:var(--bg2)}
-.br{padding:13px 16px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:13px;font-family:'Noto Sans SC',sans-serif;color:var(--ink3);cursor:pointer}
-.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;z-index:100}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1a1a;
+    --ink2: #4a4a4a;
+    --ink3: #8a8a8a;
+    --ink4: #b8b8b8;
+    --bg: #fafaf8;
+    --bg2: #f2f1ee;
+    --bg3: #e8e7e3;
+    --border: #e0deda;
+    --gold: #9a7a3a;
+    --gold-light: #f5edd6;
+    --fire: #c94a2a;
+    --water: #2a5fac;
+    --wood: #3a7a3a;
+    --metal: #6a6a6a;
+    --earth: #8a6a2a;
+    --purple: #5a4a9a;
+    --purple-light: #eeedfe;
+    --green-light: #e1f5ee;
+    --green: #0f6e56;
+    --amber-light: #faeeda;
+    --amber: #854f0b;
+    --coral-light: #faece7;
+    --coral: #993c1d;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── INPUT SCREEN ── */
+  #s-input {
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+
+  .brand { text-align: center; margin-bottom: 3rem; }
+
+  .brand-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: 0.12em;
+    margin-bottom: 0.5rem;
+  }
+
+  .brand-line { width: 32px; height: 1px; background: var(--gold); margin: 0.75rem auto; }
+
+  .brand-sub { font-size: 13px; color: var(--ink3); letter-spacing: 0.06em; }
+
+  .form-box { width: 100%; max-width: 440px; }
+
+  .field-label {
+    font-size: 11px;
+    color: var(--ink3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .pillar-section { margin-bottom: 2rem; }
+
+  .pillar-hint {
+    font-size: 12px;
+    color: var(--ink3);
+    text-align: center;
+    margin-bottom: 1rem;
+    line-height: 1.7;
+  }
+
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .pillar-col { text-align: center; }
+
+  .pillar-name { font-size: 11px; color: var(--ink3); margin-bottom: 6px; letter-spacing: 0.04em; }
+
+  .gz-inputs { display: flex; flex-direction: column; gap: 5px; }
+
+  .gz-row-label { font-size: 10px; color: var(--ink4); margin-bottom: 2px; text-align: left; padding-left: 2px; }
+
+  .gz-input {
+    width: 100%;
+    text-align: center;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 20px;
+    padding: 10px 4px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .gz-input:focus { border-color: var(--gold); background: var(--gold-light); }
+  .gz-input.valid { border-color: #3a7a3a; }
+  .gz-input.invalid { border-color: var(--coral); }
+
+  .example-hint {
+    font-size: 11px;
+    color: var(--ink4);
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .example-hint span {
+    display: inline-block;
+    background: var(--bg2);
+    padding: 4px 10px;
+    border-radius: 99px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin: 2px;
+  }
+
+  .example-hint span:hover { background: var(--bg3); }
+
+  .btn-analyze {
+    width: 100%;
+    padding: 15px;
+    background: var(--ink);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: 'Noto Sans SC', sans-serif;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .btn-analyze:hover { opacity: 0.85; }
+  .btn-analyze:active { transform: scale(0.99); }
+  .btn-analyze:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .err-msg {
+    margin-top: 1rem;
+    padding: 12px 14px;
+    background: var(--coral-light);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--coral);
+    line-height: 1.6;
+    display: none;
+  }
+
+  /* ── LOADING SCREEN ── */
+  #s-loading { align-items: center; justify-content: center; text-align: center; padding: 2rem; }
+
+  .loading-glyph {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 64px;
+    color: var(--gold);
+    animation: breathe 2s ease-in-out infinite;
+    margin-bottom: 2rem;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.2; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
+
+  .loading-steps { display: flex; flex-direction: column; gap: 10px; }
+
+  .loading-step {
+    font-size: 13px;
+    color: var(--ink4);
+    transition: color 0.4s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .loading-step.active { color: var(--ink2); }
+  .loading-step.done { color: var(--gold); }
+
+  .step-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* ── RESULT SCREEN ── */
+  #s-result { padding: 0; }
+
+  .result-inner { max-width: 600px; margin: 0 auto; padding: 2rem 1.25rem 5rem; }
+
+  .result-header { text-align: center; padding: 1.5rem 0 2rem; }
+
+  .pillars-display {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 1.5rem;
+  }
+
+  .pd-cell {
+    text-align: center;
+    background: var(--bg2);
+    border-radius: 8px;
+    padding: 10px 4px;
+    border: 1px solid var(--border);
+  }
+
+  .pd-label { font-size: 10px; color: var(--ink3); margin-bottom: 4px; }
+  .pd-gz { font-family: 'Noto Serif SC', serif; font-size: 20px; color: var(--ink); line-height: 1.5; }
+
+  .result-gejuming {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .result-badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 0.5rem; }
+
+  .rbadge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 99px;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    letter-spacing: 0.04em;
+  }
+
+  .rbadge.rare { background: var(--gold-light); font-weight: 500; }
+
+  .result-line { width: 32px; height: 1px; background: var(--gold); margin: 1rem auto 0; }
+
+  /* Cards */
+  .rcard {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 0.875rem;
+  }
+
+  .rcard-title {
+    font-size: 11px;
+    color: var(--ink3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rcard-title::after {
+    content: '';
+    flex: 1;
+    height: 0.5px;
+    background: var(--border);
+  }
+
+  /* Energy bars */
+  .ebar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 0.5px solid var(--bg2);
+  }
+
+  .ebar-row:last-child { border-bottom: none; }
+
+  .ebar-name {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px;
+    font-weight: 600;
+    width: 22px;
+    text-align: center;
+  }
+
+  .ebar-wrap {
+    flex: 1;
+    height: 6px;
+    background: var(--bg2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .ebar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ebar-pct { font-size: 12px; color: var(--ink3); width: 34px; text-align: right; }
+
+  /* Util */
+  .util-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 9px 0;
+    border-bottom: 0.5px solid var(--bg2);
+    font-size: 13px;
+    gap: 12px;
+  }
+
+  .util-row:last-child { border-bottom: none; }
+  .util-label { color: var(--ink2); flex-shrink: 0; }
+  .util-val { font-weight: 500; color: var(--ink); text-align: right; }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  .tag-low { background: var(--green-light); color: var(--green); }
+  .tag-mid { background: var(--amber-light); color: var(--amber); }
+  .tag-high { background: var(--coral-light); color: var(--coral); }
+  .tag-xianhua { background: var(--purple-light); color: var(--purple); }
+  .tag-he { background: var(--green-light); color: var(--green); }
+  .tag-chong { background: var(--amber-light); color: var(--amber); }
+  .tag-qianli { background: var(--bg2); color: var(--ink3); border: 0.5px solid var(--border); }
+  .tag-kongbai { background: var(--bg2); color: var(--ink4); }
+
+  /* Shishen */
+  .ss-row { padding: 10px 0; border-bottom: 0.5px solid var(--bg2); }
+  .ss-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .ss-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+  .ss-name { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .ss-tags { display: flex; gap: 5px; align-items: center; }
+  .ss-pct { font-size: 12px; color: var(--ink3); }
+
+  .ss-bar-wrap {
+    height: 4px;
+    background: var(--bg2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 5px;
+  }
+
+  .ss-bar-fill {
+    height: 100%;
+    background: var(--ink3);
+    border-radius: 2px;
+    transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ss-note { font-size: 11px; color: var(--ink3); }
+
+  /* Gongzuo */
+  .gz-item-r { padding: 12px 0; border-bottom: 0.5px solid var(--bg2); }
+  .gz-item-r:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .gz-item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+
+  .gz-zuhe {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .gz-direction { font-size: 12px; color: var(--ink3); }
+  .gz-desc { font-size: 13px; color: var(--ink2); line-height: 1.7; }
+
+  /* Narrative */
+  .narrative { font-size: 15px; line-height: 2; color: var(--ink); }
+
+  /* Bottom actions */
+  .bottom-actions { display: flex; gap: 8px; margin-top: 1.5rem; }
+
+  .btn-action {
+    flex: 1;
+    padding: 13px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: white;
+    font-size: 13px;
+    font-family: 'Noto Sans SC', sans-serif;
+    color: var(--ink2);
+    cursor: pointer;
+    transition: background 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-action:hover { background: var(--bg2); }
+
+  .btn-restart {
+    padding: 13px 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: white;
+    font-size: 13px;
+    font-family: 'Noto Sans SC', sans-serif;
+    color: var(--ink3);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .btn-restart:hover { background: var(--bg2); }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 99px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 100;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 400px) {
+    .gz-input { font-size: 18px; padding: 9px 2px; }
+    .brand-title { font-size: 26px; }
+  }
 </style>
 </head>
 <body>
+
+<!-- INPUT -->
 <div class="screen active" id="s-input">
-  <div class="brand"><h1>能量图谱</h1><div class="gold-line"></div><p>冰山下的性格能量解码</p></div>
-  <div class="form-box">
-    <label class="fl">四柱八字</label>
-    <div class="hint">输入你的八字，天干地支各一格</div>
-    <div class="pgrid">
-      <div class="pcol"><div class="pname">年柱</div><div class="pinputs"><div class="prl">天干</div><input class="pi" id="n-tg" maxlength="1" placeholder="甲"><div class="prl">地支</div><input class="pi" id="n-dz" maxlength="1" placeholder="寅"></div></div>
-      <div class="pcol"><div class="pname">月柱</div><div class="pinputs"><div class="prl">天干</div><input class="pi" id="y-tg" maxlength="1" placeholder="己"><div class="prl">地支</div><input class="pi" id="y-dz" maxlength="1" placeholder="巳"></div></div>
-      <div class="pcol"><div class="pname">日柱</div><div class="pinputs"><div class="prl">天干</div><input class="pi" id="r-tg" maxlength="1" placeholder="丙"><div class="prl">地支</div><input class="pi" id="r-dz" maxlength="1" placeholder="子"></div></div>
-      <div class="pcol"><div class="pname">时柱</div><div class="pinputs"><div class="prl">天干</div><input class="pi" id="s-tg" maxlength="1" placeholder="壬"><div class="prl">地支</div><input class="pi" id="s-dz" maxlength="1" placeholder="辰"></div></div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:2rem 1.5rem;">
+    <div class="form-box">
+      <div class="brand">
+        <div class="brand-title">能量图谱</div>
+        <div class="brand-line"></div>
+        <div class="brand-sub">冰山下的性格能量解码</div>
+      </div>
+
+      <div class="pillar-section">
+        <label class="field-label">四柱八字</label>
+        <div class="pillar-hint">输入你的八字，天干地支各一格<br>不知道八字？先查万年历</div>
+        <div class="pillars-grid">
+          <div class="pillar-col">
+            <div class="pillar-name">年柱</div>
+            <div class="gz-inputs">
+              <div class="gz-row-label">天干</div>
+              <input class="gz-input" id="n-tg" maxlength="1" placeholder="甲">
+              <div class="gz-row-label">地支</div>
+              <input class="gz-input" id="n-dz" maxlength="1" placeholder="寅">
+            </div>
+          </div>
+          <div class="pillar-col">
+            <div class="pillar-name">月柱</div>
+            <div class="gz-inputs">
+              <div class="gz-row-label">天干</div>
+              <input class="gz-input" id="y-tg" maxlength="1" placeholder="己">
+              <div class="gz-row-label">地支</div>
+              <input class="gz-input" id="y-dz" maxlength="1" placeholder="巳">
+            </div>
+          </div>
+          <div class="pillar-col">
+            <div class="pillar-name">日柱</div>
+            <div class="gz-inputs">
+              <div class="gz-row-label">天干</div>
+              <input class="gz-input" id="r-tg" maxlength="1" placeholder="丙">
+              <div class="gz-row-label">地支</div>
+              <input class="gz-input" id="r-dz" maxlength="1" placeholder="子">
+            </div>
+          </div>
+          <div class="pillar-col">
+            <div class="pillar-name">时柱</div>
+            <div class="gz-inputs">
+              <div class="gz-row-label">天干</div>
+              <input class="gz-input" id="s-tg" maxlength="1" placeholder="壬">
+              <div class="gz-row-label">地支</div>
+              <input class="gz-input" id="s-dz" maxlength="1" placeholder="辰">
+            </div>
+          </div>
+        </div>
+        <div class="example-hint">
+          示例：
+          <span onclick="fillExample('甲','寅','己','巳','丙','子','壬','辰')">甲寅 己巳 丙子 壬辰</span>
+        </div>
+      </div>
+
+      <button class="btn-analyze" id="btn-go" onclick="startAnalysis()">解读我的能量图谱</button>
+      <div class="err-msg" id="err-msg"></div>
     </div>
-    <div class="ex">示例：<span onclick="fill()">甲寅 己巳 丙子 壬辰</span></div>
-    <button class="btn" onclick="go()">解读我的能量图谱</button>
-    <div class="err" id="err"></div>
   </div>
 </div>
 
+<!-- LOADING -->
 <div class="screen" id="s-loading">
-  <div class="glyph" id="gl">命</div>
-  <div class="steps">
-    <div class="step" id="ls1"><div class="dot"></div>排盘 · 定日主</div>
-    <div class="step" id="ls2"><div class="dot"></div>计算先天能量底色</div>
-    <div class="step" id="ls3"><div class="dot"></div>推演做工关系与动能转化</div>
-    <div class="step" id="ls4"><div class="dot"></div>生成能量解读</div>
+  <div class="loading-glyph" id="l-glyph">命</div>
+  <div class="loading-steps">
+    <div class="loading-step" id="ls-1"><div class="step-dot"></div>排盘 · 定日主</div>
+    <div class="loading-step" id="ls-2"><div class="step-dot"></div>计算先天能量底色</div>
+    <div class="loading-step" id="ls-3"><div class="step-dot"></div>推演做工关系与动能转化</div>
+    <div class="loading-step" id="ls-4"><div class="step-dot"></div>生成能量解读</div>
   </div>
 </div>
 
-<div class="screen" id="s-result"><div class="ri" id="ri"></div></div>
+<!-- RESULT -->
+<div class="screen" id="s-result">
+  <div class="result-inner" id="result-inner"></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-const TG=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
-const DZ=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
-const WC={火:'#c94a2a',水:'#2a5fac',木:'#3a7a3a',金:'#6a6a6a',土:'#8a6a2a'};
-let saved=null,lt=null;
+const TG = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const DZ = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const WX_COLOR = { 火:'#c94a2a', 水:'#2a5fac', 木:'#3a7a3a', 金:'#6a6a6a', 土:'#8a6a2a' };
 
-function fill(){
-  const vals=['甲','寅','己','巳','丙','子','壬','辰'];
-  ['n-tg','n-dz','y-tg','y-dz','r-tg','r-dz','s-tg','s-dz'].forEach((id,i)=>{
-    document.getElementById(id).value=vals[i];
-  });
+let savedResult = null;
+
+function fillExample(ntg,ndz,ytg,ydz,rtg,rdz,stg,sdz) {
+  document.getElementById('n-tg').value = ntg;
+  document.getElementById('n-dz').value = ndz;
+  document.getElementById('y-tg').value = ytg;
+  document.getElementById('y-dz').value = ydz;
+  document.getElementById('r-tg').value = rtg;
+  document.getElementById('r-dz').value = rdz;
+  document.getElementById('s-tg').value = stg;
+  document.getElementById('s-dz').value = sdz;
 }
 
-function show(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
-function showToast(m){
-  const t=document.getElementById('toast');
-  t.textContent=m;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2500);
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-function validate(){
-  const fs=[{id:'n-tg',l:TG},{id:'n-dz',l:DZ},{id:'y-tg',l:TG},{id:'y-dz',l:DZ},{id:'r-tg',l:TG},{id:'r-dz',l:DZ},{id:'s-tg',l:TG},{id:'s-dz',l:DZ}];
-  for(const f of fs){const v=document.getElementById(f.id).value.trim();if(!v||!f.l.includes(v))return false;}
+function validate() {
+  const fields = [
+    {id:'n-tg', list: TG}, {id:'n-dz', list: DZ},
+    {id:'y-tg', list: TG}, {id:'y-dz', list: DZ},
+    {id:'r-tg', list: TG}, {id:'r-dz', list: DZ},
+    {id:'s-tg', list: TG}, {id:'s-dz', list: DZ},
+  ];
+  for (const f of fields) {
+    const v = document.getElementById(f.id).value.trim();
+    if (!v || !f.list.includes(v)) return false;
+  }
   return true;
 }
 
-function getVals(){
-  return['n-tg','n-dz','y-tg','y-dz','r-tg','r-dz','s-tg','s-dz'].map(id=>document.getElementById(id).value.trim());
+function getInputs() {
+  return {
+    nTG: document.getElementById('n-tg').value.trim(),
+    nDZ: document.getElementById('n-dz').value.trim(),
+    yTG: document.getElementById('y-tg').value.trim(),
+    yDZ: document.getElementById('y-dz').value.trim(),
+    rTG: document.getElementById('r-tg').value.trim(),
+    rDZ: document.getElementById('r-dz').value.trim(),
+    sTG: document.getElementById('s-tg').value.trim(),
+    sDZ: document.getElementById('s-dz').value.trim(),
+  };
 }
 
-function startAnim(){
-  const gs=['命','格','局','象','道','气','运','化','玄','机'];
-  const ss=['ls1','ls2','ls3','ls4'];
-  let gi=0,si=0;
-  document.getElementById('gl').textContent=gs[0];
-  ss.forEach(s=>{const e=document.getElementById(s);e.classList.remove('active','done');});
-  document.getElementById(ss[0]).classList.add('active');
-  lt=setInterval(()=>{
-    gi=(gi+1)%gs.length;
-    document.getElementById('gl').textContent=gs[gi];
-    if(gi%3===0&&si<ss.length-1){
-      document.getElementById(ss[si]).classList.remove('active');
-      document.getElementById(ss[si]).classList.add('done');
-      si++;document.getElementById(ss[si]).classList.add('active');
+let loadTimer = null;
+function startLoadingAnim() {
+  const glyphs = ['命','格','局','象','道','气','运','化','玄','机'];
+  const steps = ['ls-1','ls-2','ls-3','ls-4'];
+  let gi = 0, si = 0;
+  document.getElementById('l-glyph').textContent = glyphs[0];
+  steps.forEach(s => document.getElementById(s).className = 'loading-step');
+  document.getElementById(steps[0]).classList.add('active');
+  loadTimer = setInterval(() => {
+    gi = (gi + 1) % glyphs.length;
+    document.getElementById('l-glyph').textContent = glyphs[gi];
+    if (gi % 3 === 0 && si < steps.length - 1) {
+      document.getElementById(steps[si]).classList.remove('active');
+      document.getElementById(steps[si]).classList.add('done');
+      si++;
+      document.getElementById(steps[si]).classList.add('active');
     }
-  },700);
+  }, 700);
 }
 
-function stopAnim(){
-  if(lt)clearInterval(lt);
-  ['ls1','ls2','ls3','ls4'].forEach(s=>{
+function stopLoadingAnim() {
+  if (loadTimer) clearInterval(loadTimer);
+  ['ls-1','ls-2','ls-3','ls-4'].forEach(s => {
     document.getElementById(s).classList.remove('active');
     document.getElementById(s).classList.add('done');
   });
 }
 
-async function go(){
-  const err=document.getElementById('err');
-  err.style.display='none';
-  if(!validate()){err.textContent='请检查八字——天干：甲乙丙丁戊己庚辛壬癸；地支：子丑寅卯辰巳午未申酉戌亥';err.style.display='block';return;}
-  const [ntg,ndz,ytg,ydz,rtg,rdz,stg,sdz]=getVals();
-  const bazi=`年柱${ntg}${ndz} 月柱${ytg}${ydz} 日柱${rtg}${rdz} 时柱${stg}${sdz}`;
-  show('s-loading');startAnim();
-  try{
-    const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bazi})});
-    const data=await resp.json();
-    if(data.error&&!data.result)throw new Error(data.error);
-    const r=JSON.parse(data.result);
-    r.shishen_list=Array.isArray(r.shishen_list)?r.shishen_list:[];
-    r.kongbai=Array.isArray(r.kongbai)?r.kongbai:[];
-    r.wuxing=r.wuxing&&typeof r.wuxing==='object'?r.wuxing:{};
-    r.gongzuo=r.gongzuo&&typeof r.gongzuo==='object'?r.gongzuo:{};
-    r.gongzuo.he=Array.isArray(r.gongzuo.he)?r.gongzuo.he:[];
-    r.gongzuo.chong_tg=Array.isArray(r.gongzuo.chong_tg)?r.gongzuo.chong_tg:[];
-    r.neihao=r.neihao&&typeof r.neihao==='object'?r.neihao:{zhi:0,dengji:'',yuanyin:''};
-    r.nengliang_liyong=r.nengliang_liyong||0;
-    r.jieda=r.jieda||'';
-    r.gejuming=r.gejuming||'';
-    r.qudongmoshi=r.qudongmoshi||'';
-    r.gejuli=r.gejuli||'';
-    r.rizhu=r.rizhu||'';
-    r.xiyoudu=r.xiyoudu||'';
-    saved={r,i:{ntg,ndz,ytg,ydz,rtg,rdz,stg,sdz}};
-    stopAnim();render(r,saved.i);show('s-result');window.scrollTo(0,0);
-  }catch(e){
-    stopAnim();show('s-input');
-    err.textContent='解析出错：'+e.message;err.style.display='block';
+async function callAPI(inputs) {
+  const bazi = `年柱${inputs.nTG}${inputs.nDZ} 月柱${inputs.yTG}${inputs.yDZ} 日柱${inputs.rTG}${inputs.rDZ} 时柱${inputs.sTG}${inputs.sDZ}`;
+  const resp = await fetch('/api/analyze?ts=' + Date.now(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bazi }),
+    cache: 'no-store'
+  });
+  let payload = '';
+  try { payload = await resp.text(); } catch (e) { payload = ''; }
+  let data = {};
+  try { data = payload ? JSON.parse(payload) : {}; } catch (e) {
+    data = { error: '服务器返回的分析结果不是有效 JSON，请稍后再试。' };
+  }
+  if (!resp.ok || data.error) {
+    throw new Error(data.error || data.hint || `HTTP ${resp.status}`);
+  }
+  // 兼容 result 为对象或 JSON 字符串两种形态
+  let r = data.result || {};
+  if (typeof r === 'string') {
+    try { r = JSON.parse(r); } catch (e) { r = {}; }
+  }
+  return r;
+}
+
+async function startAnalysis() {
+  const errEl = document.getElementById('err-msg');
+  errEl.style.display = 'none';
+
+  if (!validate()) {
+    errEl.textContent = '请检查八字输入——天干：甲乙丙丁戊己庚辛壬癸；地支：子丑寅卯辰巳午未申酉戌亥';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const inputs = getInputs();
+  showScreen('s-loading');
+  startLoadingAnim();
+
+  try {
+    const result = await callAPI(inputs);
+    savedResult = { result, inputs };
+    stopLoadingAnim();
+    renderResult(result, inputs);
+    showScreen('s-result');
+    window.scrollTo(0, 0);
+  } catch (e) {
+    stopLoadingAnim();
+    showScreen('s-input');
+    errEl.textContent = '解析出错：' + (e.message || '未知错误') + '，请稍后重试。';
+    errEl.style.display = 'block';
   }
 }
 
-function tagClass(z,j){
-  if(j&&j.includes('合激活'))return 'the';
-  if(j&&j.includes('冲激活'))return 'tch';
-  if(j&&j.includes('天干透出'))return 'the';
-  if(z==='已显化')return 'tx';
-  return 'tq';
+function render_badge_class(zhuangtai, jihuo_type) {
+  if (jihuo_type === '合激活') return 'tag-he';
+  if (jihuo_type === '冲激活') return 'tag-chong';
+  if (zhuangtai === '已显化') return 'tag-xianhua';
+  if (zhuangtai === '潜力') return 'tag-qianli';
+  return 'tag-kongbai';
 }
 
-function tagText(z,j){
-  if(j&&j.includes('合激活'))return '合激活·持续稳定';
-  if(j&&j.includes('冲激活'))return '冲激活·脉冲爆发';
-  if(j&&j.includes('天干透出'))return '天干透出·已显化';
-  if(z==='已显化')return '已显化·前30%';
-  return '潜力待激活';
+function render_badge_text(zhuangtai, jihuo_type) {
+  if (jihuo_type === '合激活') return '合激活·持续稳定';
+  if (jihuo_type === '冲激活') return '冲激活·脉冲爆发';
+  if (zhuangtai === '已显化') return '已显化·前30%';
+  if (zhuangtai === '潜力') return '潜力待激活';
+  return '缺失';
 }
 
-function render(r,i){
-  const ly=Math.round((r.nengliang_liyong||0)*100);
-  const nh=Math.round(((r.neihao&&r.neihao.zhi)||0)*100);
-  const dengji=(r.neihao&&r.neihao.dengji)||'';
-  const yuanyin=(r.neihao&&r.neihao.yuanyin)||'';
-  const tc=dengji==='低内耗'?'tl':dengji.includes('中')?'tm':'th';
-  const wx=Object.entries(r.wuxing).sort((a,b)=>b[1]-a[1]);
-  const mw=wx.length>0?wx[0][1]:1;
-  const ss=r.shishen_list.filter(s=>s&&s.defen>0).sort((a,b)=>b.defen-a.defen);
-  const ssTG=r.shishen_list.filter(s=>s&&s.defen===0&&s.zhuangtai==='已显化');
-  const ms=ss.length>0?ss[0].defen:1;
-  const he=(r.gongzuo.he||[]).filter(h=>h&&h.zuhe);
-  const ct=(r.gongzuo.chong_tg||[]).filter(c=>c&&c.zuhe);
-  const kb=r.kongbai||[];
+function renderResult(r, inputs) {
+  // 防御性补全（历史教训：所有数组/对象字段都要兜底）
+  const wuxing = r.wuxing || {};
+  const neihao = r.neihao || { zhi: 0, dengji: '', yuanyin: '' };
+  const gongzuo = r.gongzuo || {};
+  const liyong = Math.round((r.nengliang_liyong || 0) * 100);
+  const neihaoPct = Math.round((neihao.zhi || 0) * 100);
+  const tagCls = neihao.dengji === '低内耗' ? 'tag-low' : neihao.dengji === '中内耗' ? 'tag-mid' : 'tag-high';
+  const wxEntries = Object.entries(wuxing).sort((a, b) => b[1] - a[1]);
+  const maxWx = wxEntries[0]?.[1] || 0.001;
+  const ssList = (Array.isArray(r.shishen_list) ? r.shishen_list : []).filter(s => s && s.defen > 0).sort((a, b) => b.defen - a.defen);
+  const maxSS = ssList[0]?.defen || 0.001;
+  const he = (Array.isArray(gongzuo.he) ? gongzuo.he : []).filter(h => h && h.zuhe);
+  const chongTG = (Array.isArray(gongzuo.chong_tg) ? gongzuo.chong_tg : []).filter(c => c && c.zuhe);
+  const chongDZ = (Array.isArray(gongzuo.chong_dz) ? gongzuo.chong_dz : []).filter(c => c && c.zuhe);
+  const kongbai = Array.isArray(r.kongbai) ? r.kongbai : [];
+  const zhuxian = Array.isArray(r.shengke_zhuxian) ? r.shengke_zhuxian : [];
+  const xitong = Array.isArray(r.xitong_list) ? r.xitong_list : [];
 
-  // 格局名按·分割显示
-  const gejumingParts=r.gejuming.split('·');
-  const gejumingHTML=gejumingParts.length>1
-    ? `<span style="font-size:18px;color:var(--ink3)">${gejumingParts[0]}</span><br><span style="font-size:20px">${gejumingParts.slice(1).join(' · ')}</span>`
-    : r.gejuming;
-
-  document.getElementById('ri').innerHTML=`
-    <div class="rh">
-      <div class="pdisplay">
-        ${[['年柱',i.ntg,i.ndz],['月柱',i.ytg,i.ydz],['日柱',i.rtg,i.rdz],['时柱',i.stg,i.sdz]]
-          .map(([l,t,d])=>`<div class="pc"><div class="pcl">${l}</div><div class="pcg">${t}<br>${d}</div></div>`).join('')}
+  document.getElementById('result-inner').innerHTML = `
+    <div class="result-header">
+      <div class="pillars-display">
+        ${[['年柱',inputs.nTG,inputs.nDZ],['月柱',inputs.yTG,inputs.yDZ],['日柱',inputs.rTG,inputs.rDZ],['时柱',inputs.sTG,inputs.sDZ]]
+          .map(([l,tg,dz]) => `<div class="pd-cell"><div class="pd-label">${l}</div><div class="pd-gz">${tg}<br>${dz}</div></div>`).join('')}
       </div>
-      <div class="rg">${gejumingHTML}</div>
-      <div class="rbs">
-        <span class="rb">${r.qudongmoshi}</span>
-        <span class="rb">${r.gejuli}</span>
-        <span class="rb">日主 ${r.rizhu}</span>
+      <div class="result-gejuming">${r.wanzheng_geju || r.gejuming || ''}</div>
+      <div class="result-badges">
+        <span class="rbadge">${r.qudongmoshi || ''}</span>
+        <span class="rbadge">${r.gejuli || ''}</span>
+        <span class="rbadge">日主 ${r.rizhu || ''} · ${r.rizhu_qiangruo || ''}</span>
       </div>
-      ${r.xiyoudu?`<div style="text-align:center"><div class="xiyoudu-box">✦ ${r.xiyoudu}</div></div>`:''}
-      <div class="rl"></div>
+      ${r.xiduyou ? `<div class="result-badges"><span class="rbadge rare">${r.xiduyou}</span></div>` : ''}
+      <div class="result-line"></div>
     </div>
 
-    <div class="card">
-      <div class="ct">先天能量底色</div>
-      ${wx.map(([n,v])=>`
-        <div class="er">
-          <div class="en" style="color:${WC[n]||'#888'}">${n}</div>
-          <div class="ew"><div class="ef" style="width:${mw>0?Math.round(v/mw*100):0}%;background:${WC[n]||'#888'}"></div></div>
-          <div class="ep">${Math.round(v*100)}%</div>
+    <div class="rcard">
+      <div class="rcard-title">先天能量底色</div>
+      ${wxEntries.map(([name, val]) => `
+        <div class="ebar-row">
+          <div class="ebar-name" style="color:${WX_COLOR[name] || '#6a6a6a'}">${name}</div>
+          <div class="ebar-wrap">
+            <div class="ebar-fill" style="width:${Math.round(val/maxWx*100)}%;background:${WX_COLOR[name] || '#6a6a6a'}"></div>
+          </div>
+          <div class="ebar-pct">${Math.round(val*100)}%</div>
         </div>`).join('')}
-      ${kb.length?`<div style="margin-top:10px;font-size:12px;color:var(--ink4)">空白缺失：${kb.filter(k=>typeof k==='string').join('、')}</div>`:''}
+      ${kongbai.length > 0 ? `<div style="margin-top:10px;font-size:12px;color:var(--ink4)">空白缺失：${kongbai.join('、')}</div>` : ''}
     </div>
 
-    <div class="card">
-      <div class="ct">能量利用率 · 内耗</div>
-      <div class="ur"><span class="ul">能量利用率</span><span class="uv">${ly}%</span></div>
-      <div class="ur"><span class="ul">内耗值</span><span class="uv">${nh}% <span class="tag ${tc}">${dengji}</span></span></div>
-      <div class="ur"><span class="ul">内耗来源</span><span class="uv" style="font-weight:400;color:var(--ink2);font-size:12px">${yuanyin}</span></div>
+    <div class="rcard">
+      <div class="rcard-title">能量利用率 · 内耗</div>
+      <div class="util-row">
+        <span class="util-label">能量利用率</span>
+        <span class="util-val">${liyong}%</span>
+      </div>
+      <div class="util-row">
+        <span class="util-label">内耗值</span>
+        <span class="util-val">${neihaoPct}% <span class="tag ${tagCls}">${neihao.dengji}</span></span>
+      </div>
+      <div class="util-row">
+        <span class="util-label">内耗来源</span>
+        <span class="util-val" style="font-weight:400;color:var(--ink2)">${neihao.yuanyin}</span>
+      </div>
+      ${zhuxian.length ? `
+      <div class="util-row">
+        <span class="util-label">生克主线</span>
+        <span class="util-val" style="font-weight:400;color:var(--ink2)">${zhuxian.join(' → ')}</span>
+      </div>` : ''}
     </div>
 
-    ${ss.length>0?`
-    <div class="card">
-      <div class="ct">十神驱动力 · 实际能力</div>
-      ${ss.map(s=>`
-        <div class="sr">
-          <div class="st">
-            <span class="sn">${s.shishen||''}</span>
-            <div class="stags">
-              <span class="tag ${tagClass(s.zhuangtai,s.jihuo_type)}">${tagText(s.zhuangtai,s.jihuo_type)}</span>
-              <span class="sp">${Math.round((s.defen||0)*100)}%</span>
+    <div class="rcard">
+      <div class="rcard-title">十神驱动力 · 实际能力</div>
+      ${ssList.map(s => `
+        <div class="ss-row">
+          <div class="ss-top">
+            <span class="ss-name">${s.shishen}<span style="font-size:11px;color:var(--ink4);font-weight:400;margin-left:6px">${s.zhu || ''}${s.gan || ''}</span></span>
+            <div class="ss-tags">
+              <span class="tag ${render_badge_class(s.zhuangtai, s.jihuo_type)}">${render_badge_text(s.zhuangtai, s.jihuo_type)}</span>
+              <span class="ss-pct">${Math.round(s.defen*100)}%</span>
             </div>
           </div>
-          <div class="sbw"><div class="sbf" style="width:${ms>0?Math.round((s.defen||0)/ms*100):0}%"></div></div>
-          <div class="sn2">实际能力：${s.shiji_nengli||''} · ${s.renqun||''}</div>
+          <div class="ss-bar-wrap">
+            <div class="ss-bar-fill" style="width:${Math.round(s.defen/maxSS*100)}%"></div>
+          </div>
+          <div class="ss-note">${s.laiyuan === '天干透出' ? '天干透出 · ' : ''}人群${s.renqun || ''}</div>
         </div>`).join('')}
-      ${ssTG.length>0?`
-        <div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--bg2)">
-          <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">天干透出 · 做工激活</div>
-          ${ssTG.map(s=>`
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px">
-              <span>${s.shishen||''}</span>
-              <span class="tag the">已显化 · ${s.renqun||'前30%'}</span>
-            </div>`).join('')}
-        </div>`:''}
-    </div>`:''}
-
-    ${(he.length||ct.length)?`
-    <div class="card">
-      <div class="ct">做工关系 · 动能转化</div>
-      ${he.map(h=>`
-        <div class="gi">
-          <div class="gh"><span class="gz">${h.zuhe||''}</span><span class="tag the">合·持续稳定</span></div>
-          <div class="gd">${h.gaoneng_ss||''} 带动 ${h.dineng_ss||''}</div>
-          <div class="gx">${h.fuzhetezhi||''}</div>
-        </div>`).join('')}
-      ${ct.map(c=>`
-        <div class="gi">
-          <div class="gh"><span class="gz">${c.zuhe||''}</span><span class="tag tch">冲·脉冲爆发</span></div>
-          <div class="gd">${c.zhudong_ss||''} 主动冲击 ${c.beidong_ss||''}</div>
-          <div class="gx">${c.biaoxian||''}</div>
-        </div>`).join('')}
-    </div>`:''}
-
-    <div class="card">
-      <div class="ct">能量解读</div>
-      <div class="narr">${r.jieda}</div>
     </div>
 
-    <div class="bas">
-      <button class="ba" onclick="cp()">复制解读</button>
-      <button class="ba" onclick="sh()">分享图谱</button>
-      <button class="br" onclick="restart()">重测</button>
+    ${(he.length > 0 || chongTG.length > 0 || chongDZ.length > 0 || xitong.length > 0) ? `
+    <div class="rcard">
+      <div class="rcard-title">做工关系 · 动能转化</div>
+      ${xitong.length ? `<div class="util-row"><span class="util-label">做工系统</span><span class="util-val">${xitong.join(' + ')}</span></div>` : ''}
+      ${he.map(h => `
+        <div class="gz-item-r">
+          <div class="gz-item-header">
+            <span class="gz-zuhe">${h.zuhe}</span>
+            <span class="tag tag-he">合 · 持续稳定</span>
+          </div>
+          <div class="gz-direction" style="margin-bottom:5px">${h.gaoneng_ss} 带动 ${h.dineng_ss}</div>
+          <div class="gz-desc">${h.fuzhetezhi}</div>
+        </div>`).join('')}
+      ${chongTG.map(c => `
+        <div class="gz-item-r">
+          <div class="gz-item-header">
+            <span class="gz-zuhe">${c.zuhe}</span>
+            <span class="tag tag-chong">冲 · 脉冲爆发</span>
+          </div>
+          <div class="gz-direction" style="margin-bottom:5px">${c.zhudong_ss} 主动冲击 ${c.beidong_ss}</div>
+          <div class="gz-desc">${c.biaoxian}</div>
+        </div>`).join('')}
+      ${chongDZ.map(c => `
+        <div class="gz-item-r">
+          <div class="gz-item-header">
+            <span class="gz-zuhe">${c.zuhe}</span>
+            <span class="tag tag-qianli">地支冲 · 做工不稳</span>
+          </div>
+          <div class="gz-desc">${c.yingxiang}</div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    <div class="rcard">
+      <div class="rcard-title">能量解读</div>
+      <div class="narrative">${r.jieda || ''}</div>
+    </div>
+
+    <div class="bottom-actions">
+      <button class="btn-action" onclick="copyResult()">复制解读</button>
+      <button class="btn-action" onclick="shareText()">分享图谱</button>
+      <button class="btn-restart" onclick="restart()">重测</button>
     </div>`;
 }
 
-function cp(){
-  if(!saved)return;
-  const r=saved.r,i=saved.i;
-  navigator.clipboard.writeText(
-    `【能量图谱】${i.ntg}${i.ndz} ${i.ytg}${i.ydz} ${i.rtg}${i.rdz} ${i.stg}${i.sdz}\n\n${r.gejuming}\n${r.xiyoudu?r.xiyoudu+'\n':''}\n${r.jieda}`
-  ).then(()=>showToast('已复制'));
+function copyResult() {
+  if (!savedResult) return;
+  const r = savedResult.result;
+  const i = savedResult.inputs;
+  const text = `【能量图谱】${i.nTG}${i.nDZ} ${i.yTG}${i.yDZ} ${i.rTG}${i.rDZ} ${i.sTG}${i.sDZ}\n\n格局：${r.wanzheng_geju || r.gejuming}\n能量利用率：${Math.round(r.nengliang_liyong*100)}% · ${r.neihao.dengji}\n\n${r.jieda}`;
+  navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板'));
 }
 
-function sh(){
-  if(!saved)return;
-  const r=saved.r;
-  const t=`我的能量图谱：${r.gejuming}\n${r.xiyoudu||''}\n\n${(r.jieda||'').slice(0,100)}...`;
-  if(navigator.share)navigator.share({title:'能量图谱',text:t});
-  else navigator.clipboard.writeText(t).then(()=>showToast('已复制分享内容'));
+function shareText() {
+  if (!savedResult) return;
+  const r = savedResult.result;
+  const text = `我的能量图谱：${r.wanzheng_geju || r.gejuming}\n\n${(r.jieda || '').slice(0, 100)}...`;
+  if (navigator.share) {
+    navigator.share({ title: '能量图谱', text });
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('已复制分享内容'));
+  }
 }
 
-function restart(){
-  saved=null;document.getElementById('err').style.display='none';
-  show('s-input');window.scrollTo(0,0);
+function restart() {
+  savedResult = null;
+  document.getElementById('err-msg').style.display = 'none';
+  showScreen('s-input');
+  window.scrollTo(0, 0);
 }
 
-['n-tg','y-tg','r-tg','s-tg'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',function(){
-    this.classList.toggle('v',TG.includes(this.value));
-    this.classList.toggle('i',!!this.value&&!TG.includes(this.value));
+// Auto-validate inputs
+['n-tg','y-tg','r-tg','s-tg'].forEach(id => {
+  document.getElementById(id).addEventListener('input', function() {
+    this.classList.toggle('valid', TG.includes(this.value));
+    this.classList.toggle('invalid', this.value && !TG.includes(this.value));
   });
 });
-['n-dz','y-dz','r-dz','s-dz'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',function(){
-    this.classList.toggle('v',DZ.includes(this.value));
-    this.classList.toggle('i',!!this.value&&!DZ.includes(this.value));
+
+['n-dz','y-dz','r-dz','s-dz'].forEach(id => {
+  document.getElementById(id).addEventListener('input', function() {
+    this.classList.toggle('valid', DZ.includes(this.value));
+    this.classList.toggle('invalid', this.value && !DZ.includes(this.value));
   });
 });
 </script>
