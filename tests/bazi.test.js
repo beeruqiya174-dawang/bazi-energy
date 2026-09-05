@@ -61,10 +61,12 @@ test('案例一：甲寅 己巳 丙子 壬辰（用户本人基准八字）', ()
   assert.strictEqual(result.zhuanhua_nengliang, 0.8);
   assert.strictEqual(result.zhuanhua_xiaolv, 1);
   // 转化层次：杀制群比打通官杀（水）通道 → 官贵之途，世俗能量0.03（占已转化3.8%）
+  // 食伤（土）在伤官佩印系统中流向内在，不归世俗 → shi_guishu=false（做工归属原则）
   assert.deepStrictEqual(result.zhuanhua_cengci, {
     cengci: '官贵之途', cengci_fen: 3,
     cai_tongdao: false, guan_tongdao: true,
-    shisu_nengliang: 0.03, neizai_nengliang: 0.77, shisu_zhanbi: 0.038
+    shisu_nengliang: 0.03, neizai_nengliang: 0.77, shisu_zhanbi: 0.038,
+    shi_guishu: false
   });
   // 根气层次：巳中丙本气强根 + 寅中丙中气弱根 → 有根，承重系数1
   assert.deepStrictEqual(result.genqi_cengci, {
@@ -298,6 +300,21 @@ test('从格特判：甲寅 丙寅 癸卯 甲寅（癸水无根无印、财路�
   assert.strictEqual(result.xiduyou_data.youxiao_gonglv, 0.895);
   assert.strictEqual(result.xiduyou_data.dengji, '从财·极高转化');
   assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.0433);
+  // 世俗归属（做工归属原则）：伤官生财系统 → 木（食伤）能量顺生入财路，世俗占比从0.0%修正为100%
+  assert.strictEqual(result.zhuanhua_cengci.shi_guishu, true);
+  assert.strictEqual(result.zhuanhua_cengci.shisu_zhanbi, 1);
+  assert.strictEqual(result.zhuanhua_cengci.shisu_nengliang, 0.895);
+});
+
+test('世俗归属：食伤生财归财路、食神制杀归贵路、印向系统不归世俗', () => {
+  // 伤官生财（从财例）：食伤（木）能量全部归入财路
+  const c1 = analyze('甲寅 丙寅 癸卯 甲寅').result;
+  assert.strictEqual(c1.zhuanhua_cengci.shi_guishu, true);
+  assert.ok(Math.abs(c1.zhuanhua_cengci.shisu_nengliang - c1.wuxing['木'] - c1.wuxing['火']) < 1e-9, '食伤+财能量应全部计入世俗');
+  // 大王基准盘：伤官佩印（食伤流向内在）+ 杀制群比（比劫被制不流向财官）→ 食伤不归世俗
+  const c2 = analyze('甲寅 己巳 丙子 壬辰').result;
+  assert.strictEqual(c2.zhuanhua_cengci.shi_guishu, false);
+  assert.ok(Math.abs(c2.zhuanhua_cengci.shisu_nengliang - c2.wuxing['水']) < 1e-9, '世俗应只含官杀（水）能量');
 });
 
 test('从格特判：甲子 癸酉 己卯 甲子（己土无根无印、财官双全但功率0.365——从得不真，不算从格）', () => {
