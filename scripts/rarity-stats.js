@@ -14,7 +14,7 @@
  *   有根 ×1（日主五行藏于任一地支藏干）
  *   有气无根 ×0.5（无根，但印星生我者有实际落点）
  *   无根无气 ×0（既无根亦无印气，担纲力归零）
- *   从格特判 ×1（无根无气但财官双全 → 弃命从财官，不担而顺）
+ *   从格特判 ×1（无根无气 且 通道已开 且 转化功率≥0.5 → 弃命从财官/从杀/从财，不担而顺）
  *
  * 转化层次（世俗标准，贵为上、富次之）：
  *   4 财官双全（财、官杀两通道皆通）
@@ -99,7 +99,7 @@ function main() {
     const xishu = i === 2 ? 1 : i === 1 ? 0.5 : 0;
     console.log(`${GENQI_NAMES[i]}（×${xishu}）: ${pct(genqiDist[i])}（${genqiDist[i].toLocaleString()}）`);
   }
-  console.log(`从格特判（无根无气×财官双全，×1）: ${conggeCount.toLocaleString()}（${pct(conggeCount)}）`);
+  console.log(`从格特判（无根无气×通道已开×功率≥0.5，×1）: ${conggeCount.toLocaleString()}（${pct(conggeCount)}）`);
 
   // 三维帕累托头部门槛
   const dom = (l, e, p) => {
@@ -114,7 +114,7 @@ function main() {
 
   // 黄金用例
   console.log('\n══ 黄金用例 ══');
-  for (const [name, bazi] of [['大王', '甲寅 己巳 丙子 壬辰'], ['薛相公', '甲申 壬申 乙巳 戊寅'], ['从格例', '甲子 癸酉 戊子 癸亥']]) {
+  for (const [name, bazi] of [['大王', '甲寅 己巳 丙子 壬辰'], ['薛相公', '甲申 壬申 乙巳 戊寅'], ['从财官例', '甲子 癸酉 戊子 癸亥'], ['从财例', '甲寅 丙寅 癸卯 甲寅']]) {
     const r = BaziEngine.analyze(bazi).result;
     const gc = r.genqi_cengci;
     const cc = r.zhuanhua_cengci;

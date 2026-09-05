@@ -68,7 +68,7 @@ test('案例一：甲寅 己巳 丙子 壬辰（用户本人基准八字）', ()
   });
   // 根气层次：巳中丙本气强根 + 寅中丙中气弱根 → 有根，承重系数1
   assert.deepStrictEqual(result.genqi_cengci, {
-    genqi: '有根', genqi_fen: 2, xishu: 1, congge: false,
+    genqi: '有根', genqi_fen: 2, xishu: 1, congge: false, congge_ming: '',
     qiang_gen: 1, ruo_gen: 1,
     yin_xing: '木', yin_you: true, dangan: '有根，可担财官'
   });
@@ -248,7 +248,8 @@ test('转化层次：世俗+内在=转化能量，层次名在白名单内', () 
 
 test('根气层次：有根>有气无根>无根无气，承重系数与从格特判一致', () => {
   const GENQI_WHITELIST = ['无根无气', '有气无根', '有根'];
-  const cases = ['甲寅 己巳 丙子 壬辰', '甲申 壬申 乙巳 戊寅', '庚戌 戊子 庚申 庚辰', '癸亥 甲子 壬寅 壬寅', '甲子 甲子 甲子 甲子'];
+  const cases = ['甲寅 己巳 丙子 壬辰', '甲申 壬申 乙巳 戊寅', '庚戌 戊子 庚申 庚辰', '癸亥 甲子 壬寅 壬寅', '甲子 甲子 甲子 甲子',
+    '甲寅 丙寅 癸卯 甲寅', '甲子 癸酉 己卯 甲子'];
   for (const c of cases) {
     const { result } = analyze(c);
     const gc = result.genqi_cengci;
@@ -263,8 +264,12 @@ test('根气层次：有根>有气无根>无根无气，承重系数与从格特
     // 承重系数：有根1 / 有气无根0.5 / 无根无气0（从格特判1）
     const expectXishu = gc.genqi_fen === 2 ? 1 : gc.genqi_fen === 1 ? 0.5 : (gc.congge ? 1 : 0);
     assert.strictEqual(gc.xishu, expectXishu, `${c} 承重系数错误`);
-    // 从格 ⟺ 无根无气 且 财官双全
-    assert.strictEqual(gc.congge, gc.genqi_fen === 0 && result.zhuanhua_cengci.cengci_fen === 4, `${c} 从格特判错误`);
+    // 从格 ⟺ 无根无气 且 通道已开（层次≥财富之路）且 通道里有真能量（功率≥0.5）
+    assert.strictEqual(gc.congge,
+      gc.genqi_fen === 0 && result.zhuanhua_cengci.cengci_fen >= 2 && result.zhuanhua_nengliang >= 0.5,
+      `${c} 从格特判错误`);
+    // congge_ming ⟺ congge（有根盘不得携带从格名）
+    assert.strictEqual(gc.congge_ming ? true : false, gc.congge, `${c} congge_ming 与 congge 不一致`);
     // 有效功率 = 转化功率 × 承重系数
     assert.ok(Math.abs(result.xiduyou_data.youxiao_gonglv - Math.round(result.zhuanhua_nengliang * expectXishu * 1000) / 1000) < 1e-9,
       `${c} 有效功率 ≠ 转化功率×承重系数`);
@@ -276,10 +281,33 @@ test('从格特判：甲子 癸酉 戊子 癸亥（戊土无根无印、水财�
   assert.strictEqual(result.genqi_cengci.genqi, '无根无气');
   assert.strictEqual(result.zhuanhua_cengci.cengci, '财官双全');
   assert.strictEqual(result.genqi_cengci.congge, true);
+  assert.strictEqual(result.genqi_cengci.congge_ming, '从财官');
   assert.strictEqual(result.genqi_cengci.xishu, 1);
   assert.strictEqual(result.xiduyou_data.youxiao_gonglv, 0.851);
-  assert.strictEqual(result.xiduyou_data.dengji, '从格·顶级转化');
+  assert.strictEqual(result.xiduyou_data.dengji, '从财官·顶级转化');
   assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.0173);
+});
+
+test('从格特判：甲寅 丙寅 癸卯 甲寅（癸水无根无印、财路功率0.895，弃命从财——单通道从格收进来）', () => {
+  const { result } = analyze('甲寅 丙寅 癸卯 甲寅');
+  assert.strictEqual(result.genqi_cengci.genqi, '无根无气');
+  assert.strictEqual(result.zhuanhua_cengci.cengci, '财富之路');
+  assert.strictEqual(result.genqi_cengci.congge, true);
+  assert.strictEqual(result.genqi_cengci.congge_ming, '从财');
+  assert.strictEqual(result.genqi_cengci.xishu, 1);
+  assert.strictEqual(result.xiduyou_data.youxiao_gonglv, 0.895);
+  assert.strictEqual(result.xiduyou_data.dengji, '从财·极高转化');
+  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.0433);
+});
+
+test('从格特判：甲子 癸酉 己卯 甲子（己土无根无印、财官双全但功率0.365——从得不真，不算从格）', () => {
+  const { result } = analyze('甲子 癸酉 己卯 甲子');
+  assert.strictEqual(result.genqi_cengci.genqi, '无根无气');
+  assert.strictEqual(result.zhuanhua_cengci.cengci, '财官双全');
+  assert.strictEqual(result.genqi_cengci.congge, false);
+  assert.strictEqual(result.genqi_cengci.congge_ming, '');
+  assert.strictEqual(result.genqi_cengci.xishu, 0);
+  assert.strictEqual(result.xiduyou_data.youxiao_gonglv, 0);
 });
 
 test('转化能量恒不超过捕获能量，ECE 恒在0-1之间', () => {
