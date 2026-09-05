@@ -66,12 +66,19 @@ test('案例一：甲寅 己巳 丙子 壬辰（用户本人基准八字）', ()
     cai_tongdao: false, guan_tongdao: true,
     shisu_nengliang: 0.03, neizai_nengliang: 0.77, shisu_zhanbi: 0.038
   });
-  // 稀有度：层次×ECE×功率三维帕累托（官贵之途+效率100%+功率0.8 → 前5.12%）
-  assert.strictEqual(result.xiduyou, '转化层次「官贵之途」（世俗通道能量占已转化3.8%），综合评级「官贵之途·高效转化」：转化效率100%×功率0.8，518,400盘全枚举中仅5.1%同时达到该层次与效率功率，位于人群前5.1%');
+  // 根气层次：巳中丙本气强根 + 寅中丙中气弱根 → 有根，可担财官
+  assert.deepStrictEqual(result.genqi_cengci, {
+    genqi: '有根', genqi_fen: 2,
+    qiang_gen: 1, ruo_gen: 1,
+    yin_xing: '木', yin_you: true, dangan: '有根，可担财官'
+  });
+  // 稀有度：根气×层次×ECE×功率四维帕累托（有根+官贵之途+效率100%+功率0.8 → 前4.68%）
+  assert.strictEqual(result.xiduyou, '根气「有根」（有根，可担财官），转化层次「官贵之途」（世俗通道能量占已转化3.8%），综合评级「有根·官贵之途·极高转化」：转化效率100%×功率0.8，518,400盘全枚举中仅4.7%同时达到该根气层次与效率功率，位于人群前4.7%');
   assert.deepStrictEqual(result.xiduyou_data, {
+    genqi: '有根', genqi_fen: 2,
     cengci: '官贵之途', cengci_fen: 3, shisu_zhanbi: 0.038,
-    zhuanhua_xiaolv: 1, zhuanhua_gonglv: 0.8, toubu_zhanbi: 0.0512,
-    dengji: '官贵之途·高效转化', mingpan_zongshu: 518400
+    zhuanhua_xiaolv: 1, zhuanhua_gonglv: 0.8, toubu_zhanbi: 0.0468,
+    dengji: '有根·官贵之途·极高转化', mingpan_zongshu: 518400
   });
 
   // 空白五行：金虽无得分，但巳中藏庚金，不为空白
@@ -105,13 +112,18 @@ test('案例二：甲申 壬申 乙巳 戊寅（子平真诠·薛相公命）', 
   // 地支寅申冲
   assert.ok(result.gongzuo.chong_dz.some(c => c.zuhe === '寅申'));
 
-  // 转化层次与稀有度（财官印顺生 → 财官双全，世俗能量占比100%；ECE=0.902 功率=0.55 → 前8.08%）
+  // 转化层次与稀有度（财官印顺生 → 财官双全，世俗能量占比100%；ECE=0.902 功率=0.55 → 四维前6.96%）
   assert.strictEqual(result.zhuanhua_xiaolv, 0.902);
   assert.strictEqual(result.zhuanhua_nengliang, 0.55);
   assert.strictEqual(result.zhuanhua_cengci.cengci, '财官双全');
   assert.strictEqual(result.zhuanhua_cengci.cengci_fen, 4);
   assert.strictEqual(result.zhuanhua_cengci.shisu_zhanbi, 1);
-  assert.strictEqual(result.xiduyou, '转化层次「财官双全」（世俗通道能量占已转化100%），综合评级「财官双全·高效转化」：转化效率90.2%×功率0.55，518,400盘全枚举中仅8.1%同时达到该层次与效率功率，位于人群前8.1%');
+  // 根气：乙木通根寅中甲木（劫财根，本气位强根）→ 有根
+  assert.strictEqual(result.genqi_cengci.genqi, '有根');
+  assert.strictEqual(result.genqi_cengci.genqi_fen, 2);
+  assert.strictEqual(result.xiduyou, '根气「有根」（有根，可担财官），转化层次「财官双全」（世俗通道能量占已转化100%），综合评级「有根·财官双全·高效转化」：转化效率90.2%×功率0.55，518,400盘全枚举中仅7%同时达到该根气层次与效率功率，位于人群前7%');
+  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.0696);
+  assert.strictEqual(result.xiduyou_data.dengji, '有根·财官双全·高效转化');
 });
 
 test('输入解析与防御', () => {
@@ -169,45 +181,47 @@ test('确定性：同一八字两次计算结果完全一致', () => {
   assert.deepStrictEqual(a.result, b.result);
 });
 
-test('转化分布表：5×20×20三维网格总和恰为518,400（60年×12月×60日×12时）', () => {
-  const { CENGGI_ECE_POWER_GRID, TOTAL_CHARTS } = require('../lib/bazi.js');
-  assert.strictEqual(CENGGI_ECE_POWER_GRID.length, 5);
-  for (const lv of CENGGI_ECE_POWER_GRID) {
-    assert.strictEqual(lv.length, 20);
-    for (const row of lv) {
-      assert.strictEqual(row.length, 20);
-      for (const v of row) assert.ok(Number.isInteger(v) && v >= 0, `非法计数 ${v}`);
+test('转化分布表：3×5×20×20四维网格总和恰为518,400（60年×12月×60日×12时）', () => {
+  const { GENQI_CENGGI_ECE_POWER_GRID, TOTAL_CHARTS } = require('../lib/bazi.js');
+  assert.strictEqual(GENQI_CENGGI_ECE_POWER_GRID.length, 3);
+  for (const gq of GENQI_CENGGI_ECE_POWER_GRID) {
+    assert.strictEqual(gq.length, 5);
+    for (const lv of gq) {
+      assert.strictEqual(lv.length, 20);
+      for (const row of lv) {
+        assert.strictEqual(row.length, 20);
+        for (const v of row) assert.ok(Number.isInteger(v) && v >= 0, `非法计数 ${v}`);
+      }
     }
   }
   let sum = 0;
-  for (const lv of CENGGI_ECE_POWER_GRID) for (const row of lv) for (const v of row) sum += v;
+  for (const gq of GENQI_CENGGI_ECE_POWER_GRID) for (const lv of gq) for (const row of lv) for (const v of row) sum += v;
   assert.strictEqual(sum, TOTAL_CHARTS, `分布表总和 ${sum} ≠ ${TOTAL_CHARTS}，表与全枚举不一致`);
   assert.strictEqual(TOTAL_CHARTS, 518400);
 });
 
-test('转化分布表：三维帕累托头部占比随层次/效率/功率桶单调不增', () => {
-  const { CENGGI_ECE_POWER_GRID, TOTAL_CHARTS } = require('../lib/bazi.js');
-  const dom = (l, e, p) => {
+test('转化分布表：四维帕累托头部占比随根气/层次/效率/功率桶单调不增', () => {
+  const { GENQI_CENGGI_ECE_POWER_GRID, TOTAL_CHARTS } = require('../lib/bazi.js');
+  const dom = (g, l, e, p) => {
     let c = 0;
-    for (let i = l; i < 5; i++) for (let j = e; j < 20; j++) for (let k = p; k < 20; k++) c += CENGGI_ECE_POWER_GRID[i][j][k];
+    for (let a = g; a < 3; a++) for (let b = l; b < 5; b++) for (let j = e; j < 20; j++) for (let k = p; k < 20; k++) c += GENQI_CENGGI_ECE_POWER_GRID[a][b][j][k];
     return c;
   };
   for (let e = 0; e < 20; e++) {
     for (let p = 0; p < 20; p++) {
       if (e < 19) {
-        assert.ok(dom(0, e, p) >= dom(0, e + 1, p), `单调性破坏 e=${e} p=${p}`);
-        assert.ok(dom(4, e, p) >= dom(4, e + 1, p), `顶层单调性破坏 e=${e} p=${p}`);
+        assert.ok(dom(2, 0, e, p) >= dom(2, 0, e + 1, p), `单调性破坏 e=${e} p=${p}`);
+        assert.ok(dom(2, 4, e, p) >= dom(2, 4, e + 1, p), `顶层单调性破坏 e=${e} p=${p}`);
       }
       if (p < 19) {
-        assert.ok(dom(0, e, p) >= dom(0, e, p + 1), `单调性破坏 e=${e} p=${p}`);
-        assert.ok(dom(4, e, p) >= dom(4, e, p + 1), `顶层单调性破坏 e=${e} p=${p}`);
+        assert.ok(dom(2, 0, e, p) >= dom(2, 0, e, p + 1), `单调性破坏 e=${e} p=${p}`);
+        assert.ok(dom(2, 4, e, p) >= dom(2, 4, e, p + 1), `顶层单调性破坏 e=${e} p=${p}`);
       }
     }
   }
-  for (let l = 0; l < 4; l++) {
-    assert.ok(dom(l, 0, 0) >= dom(l + 1, 0, 0), `层次单调性破坏 l=${l}`);
-  }
-  assert.strictEqual(dom(0, 0, 0), TOTAL_CHARTS);
+  for (let l = 0; l < 4; l++) assert.ok(dom(2, l, 0, 0) >= dom(2, l + 1, 0, 0), `层次单调性破坏 l=${l}`);
+  for (let g = 0; g < 2; g++) assert.ok(dom(g, 0, 0, 0) >= dom(g + 1, 0, 0, 0), `根气单调性破坏 g=${g}`);
+  assert.strictEqual(dom(0, 0, 0, 0), TOTAL_CHARTS);
 });
 
 test('转化层次：世俗+内在=转化能量，层次名在白名单内', () => {
@@ -228,6 +242,23 @@ test('转化层次：世俗+内在=转化能量，层次名在白名单内', () 
     if (result.xitong_list.length === 0) assert.strictEqual(cc.cengci, '能量未转化');
     // 世俗能量 ≤ 转化能量
     assert.ok(cc.shisu_nengliang <= result.zhuanhua_nengliang + 1e-9, `${c} 世俗能量超过转化能量`);
+  }
+});
+
+test('根气层次：有根>有气无根>无根无气，与藏干/印星判定一致', () => {
+  const GENQI_WHITELIST = ['无根无气', '有气无根', '有根'];
+  const cases = ['甲寅 己巳 丙子 壬辰', '甲申 壬申 乙巳 戊寅', '庚戌 戊子 庚申 庚辰', '癸亥 甲子 壬寅 壬寅', '甲子 甲子 甲子 甲子'];
+  for (const c of cases) {
+    const { result } = analyze(c);
+    const gc = result.genqi_cengci;
+    assert.ok(GENQI_WHITELIST.includes(gc.genqi), `${c} 根气名非法: ${gc.genqi}`);
+    assert.ok([0, 1, 2].includes(gc.genqi_fen), `${c} 根气分非法: ${gc.genqi_fen}`);
+    assert.ok(GENQI_WHITELIST.indexOf(gc.genqi) === gc.genqi_fen, `${c} 根气名与根气分不匹配`);
+    // 有根 ⟺ 强根+弱根 > 0
+    assert.strictEqual(gc.genqi_fen === 2, (gc.qiang_gen + gc.ruo_gen) > 0, `${c} 有根判定与根数矛盾`);
+    // 无根无气 ⟺ 无根 且 印星无落点
+    if (gc.genqi_fen === 0) assert.strictEqual(gc.yin_you, false, `${c} 无根无气但印星有落点`);
+    if (gc.genqi_fen >= 1) assert.ok(gc.yin_you || gc.qiang_gen + gc.ruo_gen > 0, `${c} 层次≥1 但既无根也无印`);
   }
 });
 

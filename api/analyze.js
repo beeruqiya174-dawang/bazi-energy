@@ -53,6 +53,7 @@ const NARRATIVE_SYSTEM = `你是能量图谱的解读撰写者。你会收到一
 - 若存在伤官佩印：必须点明「见印才是经世聪明，洞察力与创造力并存，发明创造解决问题的奇才」
 - 若存在杀制群比：必须点明「外部压力是激活剂，遇强则强，脉冲式爆发」
 - 若存在官印相生或财官印顺生：结合日主强弱——有根则点明「身根稳固，受生有力」；无根则点明身弱隐忧与补根方向
+- 若 genqi_cengci 为有气无根或无根无气：必须点明「日主担不起财官」，格局再好也要打折扣；有根则可点明身能任财官
 - 只输出解读正文，不加标题、不加引号、不换行、不加任何格式符号`;
 
 function buildUserPrompt(result) {
@@ -71,6 +72,7 @@ function buildUserPrompt(result) {
     zhuanhua_nengliang: result.zhuanhua_nengliang,
     zhuanhua_xiaolv: result.zhuanhua_xiaolv,
     zhuanhua_cengci: result.zhuanhua_cengci,
+    genqi_cengci: result.genqi_cengci,
     neihao: result.neihao,
     kongbai: result.kongbai,
     shengke_zhuxian: result.shengke_zhuxian,
@@ -182,6 +184,19 @@ function templateJieda(r) {
     parts.push(ccText[cc.cengci] || '');
     if (cc.cengci !== '能量未转化' && cc.cengci !== '财官双全') {
       parts.push(`世俗通道能量占已转化的${Math.round((cc.shisu_zhanbi || 0) * 100)}%。`);
+    }
+  }
+  // 根气层次（担财官的根基）
+  const gc = r.genqi_cengci;
+  if (gc) {
+    const gcText = {
+      '有根': gc.qiang_gen >= 2 ? '日主在地支根深——财官再旺也担得起，格局的承重墙足够厚。' : '日主在地支有根——财官之任可以承担，根基不算虚浮。',
+      '有气无根': '日主无根但有印星生扶之气——以身代根，能担但担得辛苦，财官格局要打八折看。',
+      '无根无气': '日主无根无气——担不起财官：能量转化得再漂亮，也压不住世俗之局的分量，成就的形态会偏向借力与依附。'
+    };
+    parts.push(gcText[gc.genqi] || '');
+    if (gc.genqi !== '有根' && cc && cc.cengci_fen >= 2) {
+      parts.push('格局与根基的落差是这个盘面最需要注意的短板。');
     }
   }
   if (r.kongbai.length) parts.push(`${r.kongbai.join('、')}在你的盘面中缺失，这个维度需要借助外部补足。`);
