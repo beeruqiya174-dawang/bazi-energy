@@ -173,6 +173,7 @@ function templateJieda(r) {
     else if (sys === '食神制杀') parts.push('食神制杀，以技术与果敢驯服压力，适合硬核专业路线。');
     else if (sys === '财生官') parts.push('财星滋生官星，资源在向地位与影响力转化。');
     else if (sys === '伤官生财') parts.push('伤官生财，爆发力极强的输出直接变现。');
+    else if (sys === '食神生财') parts.push('食神生财，才华平稳输出、持续变现。');
     else if (sys === '财印双清') parts.push('财印双清，资源与智慧并行不悖。');
   }
   const nh = r.neihao;
@@ -193,7 +194,7 @@ function templateJieda(r) {
     }
     // 食伤顺生归入世俗通道（做工归属原则）
     if (cc.shi_guishu) {
-      if (r.xitong_list.includes('伤官生财')) {
+      if (r.xitong_list.includes('伤官生财') || r.xitong_list.includes('食神生财')) {
         parts.push('食伤能量顺生入财路——输出直接变现，有食伤顺生，能量转化效率高。');
       } else {
         parts.push('食伤能量经食神制杀归入贵路——以输出驯服压力，化为功名，能量转化效率高。');
