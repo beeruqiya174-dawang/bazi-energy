@@ -170,7 +170,7 @@ test('历史bug防复发：能量利用率恒在0-1之间', () => {
 });
 
 test('历史bug防复发：做工系统命名全部在白名单内', () => {
-  const WHITELIST = ['伤官佩印', '杀制群比', '食神制杀', '食神制官', '官印相生', '财生官', '财官印顺生', '财印双清', '伤官生财', '杀印相生'];
+  const WHITELIST = ['伤官佩印', '杀制群比', '食神制杀', '食神和官', '官印相生', '财生官', '财官印顺生', '财印双清', '伤官生财', '杀印相生'];
   const cases = [
     '甲寅 己巳 丙子 壬辰', '甲申 壬申 乙巳 戊寅', '癸卯 戊午 丙申 庚寅',
     '壬子 壬子 壬子 壬寅', '辛未 丁酉 庚午 丁亥', '戊戌 乙卯 甲寅 丙寅'
@@ -318,11 +318,12 @@ test('从格特判：甲寅 丙寅 癸卯 甲寅（癸水无根无印、财路�
   assert.strictEqual(result.zhuanhua_cengci.shisu_nengliang, 0.895);
 });
 
-test('食神制官（乙庚合=食神驯正官）：乙卯 丙戌 戊子 庚申', () => {
+test('食神和官（乙庚合=食神与正官相辅）：乙卯 丙戌 戊子 庚申', () => {
   // 食神+正官 在原白名单中缺失，导致此盘被判为「能量未转化」、转化效率0（用户上报的硬 bug）
-  // 修复后：乙庚合 → 食神制官；庚金食神（0.27）+ 乙木正官（0.02）→ 转化能量0.29、ECE 0.384
+  // 修复后：乙庚合 → 食神和官（食神生财、财生官：才华→财富→仕途链条，相辅相成）；庚金食神（0.27）+ 乙木正官（0.02）→ 转化能量0.29、ECE 0.384
+  // 注意：食神与正官非敌对，是「和」关系（食神制杀的对象是七杀，正官不受制）；命名对称于食神制杀。
   const { result } = analyze('乙卯 丙戌 戊子 庚申');
-  assert.strictEqual(result.xitong_list.includes('食神制官'), true, '做工系统应识别食神制官');
+  assert.strictEqual(result.xitong_list.includes('食神和官'), true, '做工系统应识别食神和官');
   assert.strictEqual(result.zhuanhua_nengliang, 0.29);
   assert.strictEqual(result.zhuanhua_xiaolv, 0.384);
   assert.strictEqual(result.zhuanhua_cengci.cengci, '官贵之途');
@@ -344,8 +345,8 @@ test('世俗归属：食伤生财归财路、食神制杀归贵路、印向系�
 });
 
 test('从格特判：甲子 丙子 庚子 丁亥（庚金无根无印、伤官生财功率0.46——从得不真，不算从格）', () => {
-  // 原 false-congge 例 甲子癸酉己卯甲子 在新增「食神制官」规则后变成了真从格
-  // （功率 0.365 → 0.815，因为 食神制官 拉入了金+木五行）。换用此例：单通道（财富之路）功率<0.5
+  // 原 false-congge 例 甲子癸酉己卯甲子 在新增「食神和官」规则后变成了真从格
+  // （功率 0.365 → 0.815，因为 食神和官 拉入了金+木五行）。换用此例：单通道（财富之路）功率<0.5
   const { result } = analyze('甲子 丙子 庚子 丁亥');
   assert.strictEqual(result.genqi_cengci.genqi, '无根无气');
   assert.strictEqual(result.zhuanhua_cengci.cengci, '财富之路');
