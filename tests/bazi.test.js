@@ -60,11 +60,13 @@ test('案例一：甲寅 己巳 丙子 壬辰（用户本人基准八字）', ()
   assert.strictEqual(result.gejuli, '大格');
   assert.strictEqual(result.zhuanhua_nengliang, 0.8);
   assert.strictEqual(result.zhuanhua_xiaolv, 1);
-  // 转化层次：杀制群比打通官杀（水）通道 → 官贵之途，世俗能量0.03（占已转化3.8%）
+  // 转化层次：杀制群比打通官杀（水）通道，官有地支电流（子主气0.03）→ 官贵之途
+  // 财（金）无地支电流且无食伤喂养 → 通道关闭（虚透不开通道）
   // 食伤（土）在伤官佩印系统中流向内在，不归世俗 → shi_guishu=false（做工归属原则）
   assert.deepStrictEqual(result.zhuanhua_cengci, {
     cengci: '官贵之途', cengci_fen: 3,
     cai_tongdao: false, guan_tongdao: true,
+    cai_dianliu: false, guan_dianliu: true,
     shisu_nengliang: 0.03, neizai_nengliang: 0.77, shisu_zhanbi: 0.038,
     shi_guishu: false
   });
@@ -74,12 +76,12 @@ test('案例一：甲寅 己巳 丙子 壬辰（用户本人基准八字）', ()
     qiang_gen: 1, ruo_gen: 1,
     yin_xing: '木', yin_you: true, dangan: '有根，可担财官'
   });
-  // 稀有度：层次×ECE×有效功率三维帕累托（官贵之途+效率100%+有效功率0.8 → 前4.72%）
-  assert.strictEqual(result.xiduyou, '根气「有根」承重系数1（有根，可担财官），转化层次「官贵之途」（世俗通道能量占已转化3.8%），综合评级「官贵之途·极高转化」：转化效率100%×有效功率0.8（转化功率0.8×根气系数1），518,400盘全枚举中仅4.7%同时达到该层次与效率有效功率，位于人群前4.7%');
+  // 稀有度：层次×ECE×有效功率三维帕累托（官贵之途+效率100%+有效功率0.8 → 前3.97%）
+  assert.strictEqual(result.xiduyou, '根气「有根」承重系数1（有根，可担财官），转化层次「官贵之途」（世俗通道能量占已转化3.8%），综合评级「官贵之途·极高转化」：转化效率100%×有效功率0.8（转化功率0.8×根气系数1），518,400盘全枚举中仅4%同时达到该层次与效率有效功率，位于人群前4%');
   assert.deepStrictEqual(result.xiduyou_data, {
     genqi: '有根', genqi_xishu: 1, congge: false,
     cengci: '官贵之途', cengci_fen: 3, shisu_zhanbi: 0.038,
-    zhuanhua_xiaolv: 1, zhuanhua_gonglv: 0.8, youxiao_gonglv: 0.8, toubu_zhanbi: 0.0472,
+    zhuanhua_xiaolv: 1, zhuanhua_gonglv: 0.8, youxiao_gonglv: 0.8, toubu_zhanbi: 0.0397,
     dengji: '官贵之途·极高转化', mingpan_zongshu: 518400
   });
 
@@ -114,20 +116,26 @@ test('案例二：甲申 壬申 乙巳 戊寅（子平真诠·薛相公命）', 
   // 地支寅申冲
   assert.ok(result.gongzuo.chong_dz.some(c => c.zuhe === '寅申'));
 
-  // 转化层次与稀有度（财官印顺生 → 财官双全，世俗能量占比100%；ECE=0.902 功率=0.55 有效功率=0.55 → 三维前7.08%）
+  // 转化层次与稀有度（通道电流判定：金官有申申主气电流 → 官通道开；
+  //   土财仅戊土虚透、巳寅中气无主气电流，亦无食伤喂养 → 财通道关闭 → 官贵之途）
+  //   世俗能量0.55全部为官（水）电流，占比100%；ECE=0.902 功率=0.55 → 三维前11.02%
   assert.strictEqual(result.zhuanhua_xiaolv, 0.902);
   assert.strictEqual(result.zhuanhua_nengliang, 0.55);
-  assert.strictEqual(result.zhuanhua_cengci.cengci, '财官双全');
-  assert.strictEqual(result.zhuanhua_cengci.cengci_fen, 4);
+  assert.strictEqual(result.zhuanhua_cengci.cengci, '官贵之途');
+  assert.strictEqual(result.zhuanhua_cengci.cengci_fen, 3);
+  assert.strictEqual(result.zhuanhua_cengci.cai_tongdao, false);
+  assert.strictEqual(result.zhuanhua_cengci.guan_tongdao, true);
+  assert.strictEqual(result.zhuanhua_cengci.cai_dianliu, false);
+  assert.strictEqual(result.zhuanhua_cengci.guan_dianliu, true);
   assert.strictEqual(result.zhuanhua_cengci.shisu_zhanbi, 1);
   // 根气：乙木通根寅中甲木（劫财根，本气位强根）→ 有根，承重系数1
   assert.strictEqual(result.genqi_cengci.genqi, '有根');
   assert.strictEqual(result.genqi_cengci.genqi_fen, 2);
   assert.strictEqual(result.genqi_cengci.xishu, 1);
-  assert.strictEqual(result.xiduyou, '根气「有根」承重系数1（有根，可担财官），转化层次「财官双全」（世俗通道能量占已转化100%），综合评级「财官双全·高效转化」：转化效率90.2%×有效功率0.55（转化功率0.55×根气系数1），518,400盘全枚举中仅7.1%同时达到该层次与效率有效功率，位于人群前7.1%');
-  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.0708);
+  assert.strictEqual(result.xiduyou, '根气「有根」承重系数1（有根，可担财官），转化层次「官贵之途」（世俗通道能量占已转化100%），综合评级「官贵之途·中高转化」：转化效率90.2%×有效功率0.55（转化功率0.55×根气系数1），518,400盘全枚举中仅11%同时达到该层次与效率有效功率，位于人群前11%');
+  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.1102);
   assert.strictEqual(result.xiduyou_data.youxiao_gonglv, 0.55);
-  assert.strictEqual(result.xiduyou_data.dengji, '财官双全·高效转化');
+  assert.strictEqual(result.xiduyou_data.dengji, '官贵之途·中高转化');
 });
 
 test('输入解析与防御', () => {
@@ -278,16 +286,17 @@ test('根气层次：有根>有气无根>无根无气，承重系数与从格特
   }
 });
 
-test('从格特判：甲子 癸酉 戊子 癸亥（戊土无根无印、水财木官，弃命从财官）', () => {
+test('从格特判：甲子 癸酉 戊子 癸亥（戊土无根无印、水财木官——官虚透无电流，弃命从财）', () => {
   const { result } = analyze('甲子 癸酉 戊子 癸亥');
   assert.strictEqual(result.genqi_cengci.genqi, '无根无气');
-  assert.strictEqual(result.zhuanhua_cengci.cengci, '财官双全');
+  // 通道电流判定：水财有地支电流（子亥主气），甲木官虚透（亥中中气无主气电流，亦无食伤喂养）→ 仅财通道开
+  assert.strictEqual(result.zhuanhua_cengci.cengci, '财富之路');
   assert.strictEqual(result.genqi_cengci.congge, true);
-  assert.strictEqual(result.genqi_cengci.congge_ming, '从财官');
+  assert.strictEqual(result.genqi_cengci.congge_ming, '从财');
   assert.strictEqual(result.genqi_cengci.xishu, 1);
   assert.strictEqual(result.xiduyou_data.youxiao_gonglv, 0.851);
-  assert.strictEqual(result.xiduyou_data.dengji, '从财官·顶级转化');
-  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.0173);
+  assert.strictEqual(result.xiduyou_data.dengji, '从财·极高转化');
+  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.0397);
 });
 
 test('从格特判：甲寅 丙寅 癸卯 甲寅（癸水无根无印、财路功率0.895，弃命从财——单通道从格收进来）', () => {
@@ -299,7 +308,10 @@ test('从格特判：甲寅 丙寅 癸卯 甲寅（癸水无根无印、财路�
   assert.strictEqual(result.genqi_cengci.xishu, 1);
   assert.strictEqual(result.xiduyou_data.youxiao_gonglv, 0.895);
   assert.strictEqual(result.xiduyou_data.dengji, '从财·极高转化');
-  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.0433);
+  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.0397);
+  // 通道电流判定：甲寅会卯（木）财虚透无主气电流，但伤官生财的食伤（木）电流喂养 → 财通道活（大王拍板：食伤生虚财保留）
+  assert.strictEqual(result.zhuanhua_cengci.cai_dianliu, false);
+  assert.strictEqual(result.zhuanhua_cengci.cai_tongdao, true);
   // 世俗归属（做工归属原则）：伤官生财系统 → 木（食伤）能量顺生入财路，世俗占比从0.0%修正为100%
   assert.strictEqual(result.zhuanhua_cengci.shi_guishu, true);
   assert.strictEqual(result.zhuanhua_cengci.shisu_zhanbi, 1);
