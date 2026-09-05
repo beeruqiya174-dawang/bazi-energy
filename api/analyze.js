@@ -55,6 +55,9 @@ const NARRATIVE_SYSTEM = `你是能量图谱的解读撰写者。你会收到一
 - 若存在官印相生或财官印顺生：结合日主强弱——有根则点明「身根稳固，受生有力」；无根则点明身弱隐忧与补根方向
 - 五行能量含地支藏干补充分（中气×0.3、余气×0.15）：如戌藏丁火——火有初始能量但弱于主气，解读时可点明「藏而不透，能量有但待显化」
 - 若 zhuanhua_cengci.shi_guishu 为 true：食伤能量按做工归属顺生入财路（食伤生财）或贵路（食神制杀），世俗占比已含此归入——点明「输出顺生变现/驯压成贵，能量转化效率高」
+- 能量转化采用体用流模型：印比食为体（源），财官为用（汇），世俗流（shisu_liu，体流向财官）与内在流（neizai_liu，用回流滋养日主，如官印相生）并行——解读时按 shisu_zhanbi 点明外向/向内的比重倾向
+- 若 zhuanhua_cengci.pingjing 非空：这是转化瓶颈（流网络最小割，管道最窄处），必须用大白话点明——瓶颈在哪个环节、卡住的是输送还是接收（管宽小=该环节桶容或管道窄，能量过不去）
+- 若 zhuanhua_cengci.ke_sunhao > 0：克边导流有耗散（食伤制杀/和官，杀敌一千自损八百），点明「短期见效但事后需要补能量休整」
 - 若 genqi_cengci 为有气无根（承重系数0.5）或无根无气（承重系数0）：必须点明「日主担不起财官」，格局再好也要按系数打折；有根则可点明身能任财官
 - 若 genqi_cengci.congge 为 true（无根无气 但 财官通道已开 且 转化功率≥0.5）：必须点明这是从格——按 congge_ming 区分从财官/从杀/从财，弃命相从、不担而顺，从得真者反主大富大贵的极少数
 - 只输出解读正文，不加标题、不加引号、不换行、不加任何格式符号`;
@@ -192,6 +195,20 @@ function templateJieda(r) {
     if (cc.cengci !== '能量未转化' && cc.cengci !== '财官双全') {
       parts.push(`世俗通道能量占已转化的${Math.round((cc.shisu_zhanbi || 0) * 100)}%。`);
     }
+    // 体用双流（真流模型 V7）
+    if (typeof cc.shisu_liu === 'number' && cc.shisu_liu + cc.neizai_liu > 0) {
+      if (cc.neizai_liu > 0 && cc.shisu_liu > 0) {
+        parts.push(`能量在体用之间双向流动：外向世俗流与内向滋养流并行，说明输出与自我修复兼顾。`);
+      }
+    }
+    // 转化瓶颈（最小割）
+    if (cc.pingjing) {
+      parts.push(`目前的转化瓶颈在${cc.pingjing}——这是管道最窄处，把这一环节的容量补上去，整体转化率才能再上台阶。`);
+    }
+    // 克边耗散（杀敌一千自损八百）
+    if (cc.ke_sunhao > 0) {
+      parts.push(`你的部分成果是以对抗方式拿到的（食伤制杀/和官）：见效快，但每一步都有两成左右的能量在克战中耗散，事后需要休整回补，不宜连场硬仗。`);
+    }
     // 食伤顺生归入世俗通道（做工归属原则）
     if (cc.shi_guishu) {
       if (r.xitong_list.includes('伤官生财') || r.xitong_list.includes('食神生财')) {
@@ -211,7 +228,7 @@ function templateJieda(r) {
         '从财': '日主无根无气而财星成势且能量充实——弃命从财的从格：舍身逐财，随财富之势而行，从得真者反主富。'
       };
       parts.push(cgText[gc.congge_ming] || cgText['从财官']);
-      parts.push('全枚举518,400盘中仅约0.2%的极少数配置（从财官/从杀/从财合计1,194盘），且以通道能量≥0.5为「从得真」的门槛——从得不真者不算从。');
+      parts.push('全枚举518,400盘中仅约0.25%的极少数配置（从财官/从杀/从财合计1,317盘），且以通道能量≥0.5为「从得真」的门槛——从得不真者不算从。');
     } else {
       const gcText = {
         '有根': gc.qiang_gen >= 2 ? '日主在地支根深（承重系数1）——财官再旺也担得起，格局的承重墙足够厚。' : '日主在地支有根（承重系数1）——财官之任可以承担，根基不算虚浮。',
@@ -301,7 +318,7 @@ async function handler(req, res) {
     calc,
     result,
     meta: {
-      engine: 'bazi-engine-v6-deterministic',
+      engine: 'bazi-engine-v7-flow-model',
       narrative_provider: providerUsed,
       narrative_fallbacks: attempts,
       duration_ms: Date.now() - (req.startTime || 0)
