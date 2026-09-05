@@ -1,19 +1,20 @@
 /**
- * 能量转化四维分布计算 —— 全排列组合枚举
+ * 能量转化三维分布计算 —— 全排列组合枚举
  *
  * 原理：四柱命盘的合法组合总数是确定的：
  *   年柱 60（干支同阳阴配对）× 月支 12（月干由五虎遁唯一确定）
  *   × 日柱 60 × 时支 12（时干由五鼠遁唯一确定）
  *   = 518,400 个不同命盘。
  *
- * 对每一个命盘跑确定性引擎，统计 (根气 × 转化层次 × ECE × 转化功率) 的四维联合分布，
- * 引擎内置的 GENQI_CENGGI_ECE_POWER_GRID 即由此生成。稀有度 = 四维帕累托头部占比：
- * 同时达到「根气≥你 且 层次≥你 且 效率≥你 且 功率≥你」的命盘占比（含同档）。
+ * 对每一个命盘跑确定性引擎，统计 (转化层次 × ECE × 有效功率) 的三维联合分布，
+ * 引擎内置的 CENGGI_ECE_YOUXIAO_GRID 即由此生成。稀有度 = 三维帕累托头部占比：
+ * 同时达到「层次≥你 且 效率≥你 且 有效功率≥你」的命盘占比（含同档）。
  *
- * 根气层次（担财官的根基：没有根的担不起财官）：
- *   2 有根（日主五行藏于任一地支藏干）
- *   1 有气无根（无根，但印星生我者有实际落点）
- *   0 无根无气（既无根亦无印气）
+ * 有效功率 = 转化功率 × 根气承重系数（「担不起财官」的数学直译）：
+ *   有根 ×1（日主五行藏于任一地支藏干）
+ *   有气无根 ×0.5（无根，但印星生我者有实际落点）
+ *   无根无气 ×0（既无根亦无印气，担纲力归零）
+ *   从格特判 ×1（无根无气但财官双全 → 弃命从财官，不担而顺）
  *
  * 转化层次（世俗标准，贵为上、富次之）：
  *   4 财官双全（财、官杀两通道皆通）
@@ -62,9 +63,9 @@ function hourStem(dayStem, hourBranch) {
 function main() {
   const pillars60 = allPillars();
   const G = 20; // 与引擎内置网格相同粒度
-  const grid = Array.from({ length: 3 }, () => Array.from({ length: 5 }, () => Array.from({ length: G }, () => new Array(G).fill(0))));
+  const grid = Array.from({ length: 5 }, () => Array.from({ length: G }, () => new Array(G).fill(0)));
   const genqiDist = [0, 0, 0];
-  const jointDist = [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]];
+  let conggeCount = 0;
   let count = 0;
   const t0 = Date.now();
 
@@ -80,10 +81,10 @@ function main() {
           const gq = result.genqi_cengci.genqi_fen;
           const l = result.zhuanhua_cengci.cengci_fen;
           const e = Math.min(G - 1, Math.floor(result.zhuanhua_xiaolv * G));
-          const p = Math.min(G - 1, Math.floor(Math.min(1, result.zhuanhua_nengliang) * G));
-          grid[gq][l][e][p]++;
+          const p = Math.min(G - 1, Math.floor(Math.min(1, result.xiduyou_data.youxiao_gonglv) * G));
+          grid[l][e][p]++;
           genqiDist[gq]++;
-          jointDist[gq][l]++;
+          if (result.genqi_cengci.congge) conggeCount++;
           count++;
         }
       }
@@ -93,57 +94,52 @@ function main() {
   console.log(`枚举完成：${count.toLocaleString()} 个命盘，耗时 ${((Date.now() - t0) / 1000).toFixed(1)}s\n`);
   const pct = (x) => (100 * x / count).toFixed(2) + '%';
 
-  console.log('══ 根气层次分布 ══');
+  console.log('══ 根气层次分布（承重系数）══');
   for (let i = 2; i >= 0; i--) {
-    console.log(`${GENQI_NAMES[i]}: ${pct(genqiDist[i])}（${genqiDist[i].toLocaleString()}）`);
+    const xishu = i === 2 ? 1 : i === 1 ? 0.5 : 0;
+    console.log(`${GENQI_NAMES[i]}（×${xishu}）: ${pct(genqiDist[i])}（${genqiDist[i].toLocaleString()}）`);
   }
+  console.log(`从格特判（无根无气×财官双全，×1）: ${conggeCount.toLocaleString()}（${pct(conggeCount)}）`);
 
-  console.log('\n══ 根气×转化层次 联合分布（行=根气，列=层次）══');
-  console.log('\t' + CENGGI_NAMES.join('\t'));
-  for (let g = 2; g >= 0; g--) {
-    console.log(`${GENQI_NAMES[g]}\t` + jointDist[g].map((v) => pct(v)).join('\t'));
-  }
-
-  // 四维帕累托头部门槛
-  const dom = (g, l, e, p) => {
+  // 三维帕累托头部门槛
+  const dom = (l, e, p) => {
     let c = 0;
-    for (let a = g; a < 3; a++) for (let b = l; b < 5; b++) for (let j = e; j < G; j++) for (let k = p; k < G; k++) c += grid[a][b][j][k];
+    for (let b = l; b < 5; b++) for (let j = e; j < G; j++) for (let k = p; k < G; k++) c += grid[b][j][k];
     return c / count;
   };
-  console.log('\n══ 四维帕累托头部门槛（根气≥ 且 层次≥ 且 效率≥ 且 功率≥ 的占比）══');
-  for (const [g, l, e, p] of [[2, 4, 19, 19], [2, 4, 18, 16], [2, 4, 0, 0], [2, 3, 19, 16], [1, 4, 0, 0], [0, 4, 0, 0], [0, 0, 0, 0]]) {
-    console.log(`${GENQI_NAMES[g]} + ${CENGGI_NAMES[l]} + ECE≥${(e / G).toFixed(2)} + 功率≥${(p / G).toFixed(2)}: ${(dom(g, l, e, p) * 100).toFixed(2)}%`);
+  console.log('\n══ 三维帕累托头部门槛（层次≥ 且 效率≥ 且 有效功率≥ 的占比）══');
+  for (const [l, e, p] of [[4, 19, 19], [4, 18, 16], [4, 0, 0], [3, 19, 16], [0, 0, 0]]) {
+    console.log(`${CENGGI_NAMES[l]} + ECE≥${(e / G).toFixed(2)} + 有效功率≥${(p / G).toFixed(2)}: ${(dom(l, e, p) * 100).toFixed(2)}%`);
   }
 
   // 黄金用例
   console.log('\n══ 黄金用例 ══');
-  for (const [name, bazi] of [['大王', '甲寅 己巳 丙子 壬辰'], ['薛相公', '甲申 壬申 乙巳 戊寅']]) {
+  for (const [name, bazi] of [['大王', '甲寅 己巳 丙子 壬辰'], ['薛相公', '甲申 壬申 乙巳 戊寅'], ['从格例', '甲子 癸酉 戊子 癸亥']]) {
     const r = BaziEngine.analyze(bazi).result;
     const gc = r.genqi_cengci;
     const cc = r.zhuanhua_cengci;
-    console.log(`${name}: ${gc.genqi}（${gc.dangan}）· ${cc.cengci}（世俗占${(100 * cc.shisu_zhanbi).toFixed(1)}%）ECE=${r.zhuanhua_xiaolv} 功率=${r.zhuanhua_nengliang} → ${r.xiduyou_data.dengji} 前${(r.xiduyou_data.toubu_zhanbi * 100).toFixed(2)}%`);
+    const d = r.xiduyou_data;
+    console.log(`${name}: ${gc.genqi}（×${gc.xishu}${gc.congge ? '，从格特判' : ''}）· ${cc.cengci}（世俗占${(100 * cc.shisu_zhanbi).toFixed(1)}%）ECE=${r.zhuanhua_xiaolv} 有效功率=${d.youxiao_gonglv} → ${d.dengji} 前${(d.toubu_zhanbi * 100).toFixed(2)}%`);
   }
 
-  // ══ 一致性校验：实时枚举 vs 引擎内置 GENQI_CENGGI_ECE_POWER_GRID ══
-  const embedded = BaziEngine.GENQI_CENGGI_ECE_POWER_GRID;
+  // ══ 一致性校验：实时枚举 vs 引擎内置 CENGGI_ECE_YOUXIAO_GRID ══
+  const embedded = BaziEngine.CENGGI_ECE_YOUXIAO_GRID;
   if (embedded) {
     let mismatch = 0;
-    for (let g = 0; g < 3; g++) {
-      for (let l = 0; l < 5; l++) {
-        for (let i = 0; i < G; i++) {
-          for (let j = 0; j < G; j++) {
-            if (grid[g][l][i][j] !== embedded[g][l][i][j]) {
-              mismatch++;
-              if (mismatch <= 10) console.log(`⚠️ 不一致 [${g}][${l}][${i}][${j}]：枚举=${grid[g][l][i][j]} 内置=${embedded[g][l][i][j]}`);
-            }
+    for (let l = 0; l < 5; l++) {
+      for (let i = 0; i < G; i++) {
+        for (let j = 0; j < G; j++) {
+          if (grid[l][i][j] !== embedded[l][i][j]) {
+            mismatch++;
+            if (mismatch <= 10) console.log(`⚠️ 不一致 [${l}][${i}][${j}]：枚举=${grid[l][i][j]} 内置=${embedded[l][i][j]}`);
           }
         }
       }
     }
     if (mismatch === 0) {
-      console.log('\n✅ 一致性校验通过：引擎内置 GENQI_CENGGI_ECE_POWER_GRID 与实时全枚举完全一致（3×5×20×20 网格）');
+      console.log('\n✅ 一致性校验通过：引擎内置 CENGGI_ECE_YOUXIAO_GRID 与实时全枚举完全一致（5×20×20 网格）');
     } else {
-      console.log(`\n❌ ${mismatch} 个格子不一致——规则已改动，需用本次枚举结果更新 lib/bazi.js 的 GENQI_CENGGI_ECE_POWER_GRID！`);
+      console.log(`\n❌ ${mismatch} 个格子不一致——规则已改动，需用本次枚举结果更新 lib/bazi.js 的 CENGGI_ECE_YOUXIAO_GRID！`);
       console.log('新表：');
       console.log(JSON.stringify(grid));
       process.exitCode = 1;
