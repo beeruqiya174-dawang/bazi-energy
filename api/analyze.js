@@ -53,6 +53,7 @@ const NARRATIVE_SYSTEM = `你是能量图谱的解读撰写者。你会收到一
 - 若存在伤官佩印：必须点明「见印才是经世聪明，洞察力与创造力并存，发明创造解决问题的奇才」
 - 若存在杀制群比：必须点明「外部压力是激活剂，遇强则强，脉冲式爆发」
 - 若存在官印相生或财官印顺生：结合日主强弱——有根则点明「身根稳固，受生有力」；无根则点明身弱隐忧与补根方向
+- 五行能量含地支藏干补充分（中气×0.3、余气×0.15）：如戌藏丁火——火有初始能量但弱于主气，解读时可点明「藏而不透，能量有但待显化」
 - 若 zhuanhua_cengci.shi_guishu 为 true：食伤能量按做工归属顺生入财路（食伤生财）或贵路（食神制杀），世俗占比已含此归入——点明「输出顺生变现/驯压成贵，能量转化效率高」
 - 若 genqi_cengci 为有气无根（承重系数0.5）或无根无气（承重系数0）：必须点明「日主担不起财官」，格局再好也要按系数打折；有根则可点明身能任财官
 - 若 genqi_cengci.congge 为 true（无根无气 但 财官通道已开 且 转化功率≥0.5）：必须点明这是从格——按 congge_ming 区分从财官/从杀/从财，弃命相从、不担而顺，从得真者反主大富大贵的极少数
@@ -66,6 +67,9 @@ function buildUserPrompt(result) {
     gejuli: result.gejuli,
     xiduyou: result.xiduyou,
     wuxing: result.wuxing,
+    canggan_nengliang: result.canggan_mingxi.filter(c => c.defen > 0).map(c => ({
+      weizhi: `${c.zhu}${c.dizhi}藏${c.canggan}（${c.weizhi}）`, wuxing: c.wuxing, defen: c.defen
+    })),
     shishen: result.shishen_list.map(s => ({
       shishen: s.shishen, laiyuan: s.laiyuan, defen: s.defen,
       zhuangtai: s.zhuangtai, renqun: s.renqun
