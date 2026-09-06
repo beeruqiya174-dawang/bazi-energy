@@ -201,6 +201,10 @@ function templateJieda(r) {
         parts.push(`能量在体用之间双向流动：外向世俗流与内向滋养流并行，说明输出与自我修复兼顾。`);
       }
     }
+    // 财生官先导滋养（V7.1）：财先滋养官，官厚则管道变宽
+    if (cc.ziyang_liang > 0) {
+      parts.push(`财的能量先经财生官涌入官侧（滋养量${cc.ziyang_liang}，官桶有效实体增至${cc.ziyang_guan_hou}）——资本先垫高了官的容量，食伤到官的管道随之变宽，这就是「财旺生官」的流模型表达${(!cc.cai_tongdao && cc.guan_tongdao) ? '；财通道虽未开，其能量仍顺生入贵路，没有白占' : ''}。`);
+    }
     // 转化瓶颈（最小割）
     if (cc.pingjing) {
       parts.push(`目前的转化瓶颈在${cc.pingjing}——这是管道最窄处，把这一环节的容量补上去，整体转化率才能再上台阶。`);

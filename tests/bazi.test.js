@@ -58,23 +58,24 @@ test('案例一：甲寅 己巳 丙子 壬辰（用户本人基准八字）', ()
   // 完整格局（仅描述用）与能量转化效率（ECE=世俗流/捕获能量，藏干计入捕获）
   assert.strictEqual(result.wanzheng_geju, '建禄格·伤官佩印·杀制群比');
   assert.strictEqual(result.gejuli, '大格');
-  // 真流模型 V7：体源（火0.48+木0.095+土0.345）流向用（金0.014+水0.039）
-  // 世俗流 = 官杀桶就地0.039 + 食伤生财管道流入0.014（土生金管宽受财桶0.014限制）= 0.053
-  // 伤官佩印把比劫/食伤大能量锁在内在，外向管道细 → 转化0.053、ECE 0.054（流模型诚实结论）
+  // 真流模型 V7.1：体源（火0.48+木0.095+土0.345）流向用（金0.014+水0.039）
+  // 世俗流 = 官杀桶就地0.039 + 金生水管道流入0.014 = 0.053（财通道闭，金桶经金生水作为源真实流入官）
+  // 财生官滋养：金财0.014先行滋养官桶（水桶有效实体0.039→0.053，管宽口径，金桶保留）
+  // 内在流0.053：官生印管道（水生木）按滋养后有效实体重建 → 官印相生放大（0.039→0.053）
   assert.strictEqual(result.zhuanhua_nengliang, 0.053);
   assert.strictEqual(result.zhuanhua_xiaolv, 0.054);
   // 转化层次：杀制群比打通官杀（水）通道，官有地支电流（子主气0.039）→ 官贵之途
   // 财（金）有藏干电流（巳中庚金中气0.014）但不在做工系统内 → 通道仍关（电流≠通道，还需系统参与）
   // 食伤（土）在伤官佩印系统中流向内在，不归世俗 → shi_guishu=false（做工归属原则）
-  // 内在流：官杀（水0.039）经印（木）回流滋养日主 → neizai_liu=0.039，与世俗流并行
   assert.deepStrictEqual(result.zhuanhua_cengci, {
     cengci: '官贵之途', cengci_fen: 3,
     cai_tongdao: false, guan_tongdao: true,
     cai_dianliu: true, guan_dianliu: true,
-    shisu_nengliang: 0.053, neizai_nengliang: 0.039, shisu_zhanbi: 0.576,
+    shisu_nengliang: 0.053, neizai_nengliang: 0.053, shisu_zhanbi: 0.5,
     shi_guishu: false,
-    shisu_liu: 0.053, neizai_liu: 0.039, shuru_liu: 0.014,
-    ke_liu: 0, ke_sunhao: 0, pingjing: '土生金管宽0.014'
+    shisu_liu: 0.053, neizai_liu: 0.053, shuru_liu: 0.014,
+    ke_liu: 0, ke_sunhao: 0, pingjing: '金生水管宽0.014',
+    ziyang_liang: 0.014, ziyang_guan_hou: 0.053
   });
   // 根气层次：巳中丙本气强根 + 寅中丙中气弱根 → 有根，承重系数1
   assert.deepStrictEqual(result.genqi_cengci, {
@@ -82,12 +83,12 @@ test('案例一：甲寅 己巳 丙子 壬辰（用户本人基准八字）', ()
     qiang_gen: 1, ruo_gen: 1,
     yin_xing: '木', yin_you: true, dangan: '有根，可担财官'
   });
-  // 稀有度：层次×ECE×有效功率三维帕累托（官贵之途+效率5.4%+有效功率0.053 → 前30.2%）
-  assert.strictEqual(result.xiduyou, '根气「有根」承重系数1（有根，可担财官），转化层次「官贵之途」（体用流转外向57.6%：世俗流0.053/内在流0.039），综合评级「官贵之途·中等转化」：转化效率5.4%×有效功率0.053（转化功率0.053×根气系数1），转化瓶颈：土生金管宽0.014，518,400盘全枚举中仅30.2%同时达到该层次与效率有效功率，位于人群前30.2%');
+  // 稀有度：层次×ECE×有效功率三维帕累托（官贵之途+效率5.4%+有效功率0.053 → 前31.6%）
+  assert.strictEqual(result.xiduyou, '根气「有根」承重系数1（有根，可担财官），转化层次「官贵之途」（体用流转外向50%：世俗流0.053/内在流0.053），综合评级「官贵之途·中等转化」：转化效率5.4%×有效功率0.053（转化功率0.053×根气系数1），转化瓶颈：金生水管宽0.014，518,400盘全枚举中仅31.6%同时达到该层次与效率有效功率，位于人群前31.6%');
   assert.deepStrictEqual(result.xiduyou_data, {
     genqi: '有根', genqi_xishu: 1, congge: false,
-    cengci: '官贵之途', cengci_fen: 3, shisu_zhanbi: 0.576,
-    zhuanhua_xiaolv: 0.054, zhuanhua_gonglv: 0.053, youxiao_gonglv: 0.053, toubu_zhanbi: 0.3019,
+    cengci: '官贵之途', cengci_fen: 3, shisu_zhanbi: 0.5,
+    zhuanhua_xiaolv: 0.054, zhuanhua_gonglv: 0.053, youxiao_gonglv: 0.053, toubu_zhanbi: 0.3157,
     dengji: '官贵之途·中等转化', mingpan_zongshu: 518400
   });
 
@@ -122,9 +123,10 @@ test('案例二：甲申 壬申 乙巳 戊寅（子平真诠·薛相公命）', 
   // 地支寅申冲
   assert.ok(result.gongzuo.chong_dz.some(c => c.zuhe === '寅申'));
 
-// 转化层次与稀有度（真流模型 V7：金官0.595+土财0.076 双桶充实，
+// 转化层次与稀有度（真流模型 V7.1：金官0.595+土财0.076 双桶充实，
+//   财生官滋养：土财0.076先行滋养金官（金桶有效实体0.595→0.671，管宽口径，土桶保留——食伤生财中继不断）
 //   火生土管道0.048补财路 → 世俗流0.719（外向96%）；内在流0.03（官生印回流）
-//   ECE=0.801 功率=0.719 → 三维前6.05%）
+//   ECE=0.801 功率=0.719 → 三维前6.06%）
   assert.strictEqual(result.zhuanhua_xiaolv, 0.801);
   assert.strictEqual(result.zhuanhua_nengliang, 0.719);
   assert.strictEqual(result.zhuanhua_cengci.cengci, '财官双全');
@@ -134,12 +136,14 @@ test('案例二：甲申 壬申 乙巳 戊寅（子平真诠·薛相公命）', 
   assert.strictEqual(result.zhuanhua_cengci.cai_dianliu, true);
   assert.strictEqual(result.zhuanhua_cengci.guan_dianliu, true);
   assert.strictEqual(result.zhuanhua_cengci.shisu_zhanbi, 0.96);
+  assert.strictEqual(result.zhuanhua_cengci.ziyang_liang, 0.076);
+  assert.strictEqual(result.zhuanhua_cengci.ziyang_guan_hou, 0.671);
   // 根气：乙木通根寅中甲木（劫财根，本气位强根）→ 有根，承重系数1
   assert.strictEqual(result.genqi_cengci.genqi, '有根');
   assert.strictEqual(result.genqi_cengci.genqi_fen, 2);
   assert.strictEqual(result.genqi_cengci.xishu, 1);
-  assert.strictEqual(result.xiduyou, '根气「有根」承重系数1（有根，可担财官），转化层次「财官双全」（体用流转外向96%：世俗流0.719/内在流0.03），综合评级「财官双全·高效转化」：转化效率80.1%×有效功率0.719（转化功率0.719×根气系数1），转化瓶颈：火生土管宽0.048，518,400盘全枚举中仅6%同时达到该层次与效率有效功率，位于人群前6%');
-  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.0605);
+  assert.strictEqual(result.xiduyou, '根气「有根」承重系数1（有根，可担财官），转化层次「财官双全」（体用流转外向96%：世俗流0.719/内在流0.03），综合评级「财官双全·高效转化」：转化效率80.1%×有效功率0.719（转化功率0.719×根气系数1），转化瓶颈：火生土管宽0.048，518,400盘全枚举中仅6.1%同时达到该层次与效率有效功率，位于人群前6.1%');
+  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.0606);
   assert.strictEqual(result.xiduyou_data.youxiao_gonglv, 0.719);
   assert.strictEqual(result.xiduyou_data.dengji, '财官双全·高效转化');
 });
@@ -304,7 +308,8 @@ test('根气层次：有根>有气无根>无根无气，承重系数与从格特
 test('从格特判：甲子 癸酉 戊子 癸亥（戊土无根无印、水财木官，弃命从财官）', () => {
   const { result } = analyze('甲子 癸酉 戊子 癸亥');
   assert.strictEqual(result.genqi_cengci.genqi, '无根无气');
-  // 真流模型 V7：金官0.45+水财0.401 双桶充实且互相供养（金生水管宽0.401）
+  // 真流模型 V7.1：金官0.45+水财0.401 双桶充实且互相供养（金生水管宽0.401）
+  // 财生官滋养：水财0.009先行滋养木官（木桶有效实体0.009→0.018）
   // 世俗流0.811（就地+管道）→ 财官双全，转化功率0.811≥0.5 → 从得真
   assert.strictEqual(result.zhuanhua_cengci.cengci, '财官双全');
   assert.strictEqual(result.genqi_cengci.congge, true);
@@ -312,15 +317,16 @@ test('从格特判：甲子 癸酉 戊子 癸亥（戊土无根无印、水财�
   assert.strictEqual(result.genqi_cengci.xishu, 1);
   assert.strictEqual(result.xiduyou_data.youxiao_gonglv, 0.811);
   assert.strictEqual(result.xiduyou_data.dengji, '从财官·极高转化');
-  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.0369);
+  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.037);
 });
 
 test('从格特判：甲寅 丙寅 癸卯 甲寅（癸水无根无印、伤官成局生财——流模型下从得不真，不算从格）', () => {
   const { result } = analyze('甲寅 丙寅 癸卯 甲寅');
   assert.strictEqual(result.genqi_cengci.genqi, '无根无气');
   assert.strictEqual(result.zhuanhua_cengci.cengci, '财富之路');
-  // 真流模型 V7 诚实结论（大王已知情）：财桶（火0.23）接不住伤官势（木0.895）
+  // 真流模型 V7.1 诚实结论（大王已知情）：财桶（火0.23）接不住伤官势（木0.895）
   // 木生火管宽 = min(0.895, 0.23) = 0.23，世俗流 = 财桶就地0.23 + 管道流入0.23 = 0.46 < 0.5
+  // 官（土）通道闭 → 财生官滋养不触发（大王拍板：官通道开启才滋养）
   // 从得不真 → 不算从格，承重系数归零（旧桶模型曾整桶划转误判 1.125 为从财）
   assert.strictEqual(result.genqi_cengci.congge, false);
   assert.strictEqual(result.genqi_cengci.congge_ming, '');
@@ -329,7 +335,7 @@ test('从格特判：甲寅 丙寅 癸卯 甲寅（癸水无根无印、伤官�
   assert.strictEqual(result.zhuanhua_xiaolv, 0.404);
   assert.strictEqual(result.xiduyou_data.youxiao_gonglv, 0);
   assert.strictEqual(result.xiduyou_data.dengji, '财富之路·中等转化');
-  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.3236);
+  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.3257);
   // 通道电流：财（火）有藏干电流（寅中丙火中气）→ cai_dianliu=true（虚透之财被食伤电流+藏干共同养活）
   assert.strictEqual(result.zhuanhua_cengci.cai_dianliu, true);
   assert.strictEqual(result.zhuanhua_cengci.cai_tongdao, true);
@@ -344,17 +350,23 @@ test('从格特判：甲寅 丙寅 癸卯 甲寅（癸水无根无印、伤官�
 test('食神和官（乙庚合=食神与正官相辅）：乙卯 丙戌 戊子 庚申', () => {
   // 食神+正官 在原白名单中缺失，导致此盘被判为「能量未转化」、转化效率0（用户上报的硬 bug）
   // 修复后：乙庚合 → 食神和官（食神生财、财生官：才华→财富→仕途链条，相辅相成）
-  // 真流模型 V7：世俗流 = 官杀桶就地0.02 + 水管道流入0.02 + 克边导流0.8×0.02=0.016 → 0.056、ECE 0.058
-  // 克边（金克木）按 η=0.8 导流，损耗0.004 计入内耗（杀敌一千自损八百）
+  // 真流模型 V7.1：财生官滋养 + 财通道闭时财作源真实流入官（大王本人的提议）
+  // 水财0.02经水生木先行滋养官桶（木桶有效实体0.02→0.04，管宽口径，水桶保留）
+  // → 克边（金克木）管宽由0.8×min(金0.04,木0.02)=0.016 扩至 0.8×min(金0.04,木0.04)=0.032
+  // 水通道闭 → 水桶0.024作为源经水生木（管宽min(0.024,0.04)=0.024）真实流入官侧入账
+  // 世俗流 = 官杀桶就地0.02 + 管道流入0.056（水生木0.024+克边0.032）= 0.076、ECE 0.079
+  // 克边按 η=0.8 导流，损耗0.008 计入内耗（杀敌一千自损八百）
   // 注意：食神与正官非敌对，是「和」关系（食神制杀的对象是七杀，正官不受制）；命名对称于食神制杀。
   const { result } = analyze('乙卯 丙戌 戊子 庚申');
   assert.strictEqual(result.xitong_list.includes('食神和官'), true, '做工系统应识别食神和官');
-  assert.strictEqual(result.zhuanhua_nengliang, 0.056);
-  assert.strictEqual(result.zhuanhua_xiaolv, 0.058);
-  assert.strictEqual(result.zhuanhua_cengci.shisu_liu, 0.056);
-  assert.strictEqual(result.zhuanhua_cengci.ke_liu, 0.016);
-  assert.strictEqual(result.zhuanhua_cengci.ke_sunhao, 0.004);
-  assert.strictEqual(result.neihao.ke_sunhao, 0.004);
+  assert.strictEqual(result.zhuanhua_cengci.ziyang_liang, 0.02);
+  assert.strictEqual(result.zhuanhua_cengci.ziyang_guan_hou, 0.04);
+  assert.strictEqual(result.zhuanhua_nengliang, 0.076);
+  assert.strictEqual(result.zhuanhua_xiaolv, 0.079);
+  assert.strictEqual(result.zhuanhua_cengci.shisu_liu, 0.076);
+  assert.strictEqual(result.zhuanhua_cengci.ke_liu, 0.032);
+  assert.strictEqual(result.zhuanhua_cengci.ke_sunhao, 0.008);
+  assert.strictEqual(result.neihao.ke_sunhao, 0.008);
   assert.ok(result.neihao.yuanyin.includes('杀敌一千自损八百'), '克战损耗应写入内耗原因');
   // 戌藏丁火（余气0.034）→ 火初始能量不再为0（大王拍板：地支藏干有初始能量）
   assert.strictEqual(result.wuxing['火'], 0.034);
@@ -402,18 +414,19 @@ test('世俗归属：体用双流记账——用桶就地算有+管道流入；�
     '世俗流 = 官杀桶就地 + 管道流入');
 });
 
-test('从格特判：甲午 己巳 乙巳 辛巳（乙木无根无印、官贵之途但功率0.048——从得不真，不算从格）', () => {
-  // 真流模型 V7：官通道开（辛金七杀有巳中主气电流）但世俗流仅0.048
-  // （官杀桶就地0.024+土生金管道流入0.024，杀制群比电流微弱）→ 0.048 < 0.5 → 从得不真
+test('从格特判：甲午 己巳 乙巳 辛巳（乙木无根无印、官贵之途但功率0.072——从得不真，不算从格）', () => {
+  // 真流模型 V7.1：官通道开（辛金七杀有巳中主气电流）但世俗流仅0.072
+  // （官杀桶就地0.024 + 管道流入0.048；财生官滋养下土财作为源经土生金流入官——财党杀）
+  // 杀制群比电流微弱 → 0.072 < 0.5 → 从得不真
   const { result } = analyze('甲午 己巳 乙巳 辛巳');
   assert.strictEqual(result.genqi_cengci.genqi, '无根无气');
   assert.strictEqual(result.zhuanhua_cengci.cengci, '官贵之途');
   assert.strictEqual(result.genqi_cengci.congge, false);
   assert.strictEqual(result.genqi_cengci.congge_ming, '');
   assert.strictEqual(result.genqi_cengci.xishu, 0);
-  assert.strictEqual(result.zhuanhua_nengliang, 0.048);
+  assert.strictEqual(result.zhuanhua_nengliang, 0.072);
   assert.strictEqual(result.xiduyou_data.youxiao_gonglv, 0);
-  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.3125);
+  assert.strictEqual(result.xiduyou_data.toubu_zhanbi, 0.3249);
 });
 
 test('转化能量恒不超过捕获能量，ECE 恒在0-1之间', () => {
