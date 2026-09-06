@@ -355,7 +355,7 @@ test('食神和官（乙庚合=食神与正官相辅）：乙卯 丙戌 戊子 �
   // → 克边（金克木）管宽由0.8×min(金0.04,木0.02)=0.016 扩至 0.8×min(金0.04,木0.04)=0.032
   // 水通道闭 → 水桶0.024作为源经水生木（管宽min(0.024,0.04)=0.024）真实流入官侧入账
   // 世俗流 = 官杀桶就地0.02 + 管道流入0.056（水生木0.024+克边0.032）= 0.076、ECE 0.079
-  // 克边按 η=0.8 导流，损耗0.008 计入内耗（杀敌一千自损八百）
+  // 克边按 η=0.8 导流，损耗0.008 计入内耗（生克转换的天然耗散——大王拍板：生克是天然能量模式，不用对抗性措辞）
   // 注意：食神与正官非敌对，是「和」关系（食神制杀的对象是七杀，正官不受制）；命名对称于食神制杀。
   const { result } = analyze('乙卯 丙戌 戊子 庚申');
   assert.strictEqual(result.xitong_list.includes('食神和官'), true, '做工系统应识别食神和官');
@@ -367,7 +367,7 @@ test('食神和官（乙庚合=食神与正官相辅）：乙卯 丙戌 戊子 �
   assert.strictEqual(result.zhuanhua_cengci.ke_liu, 0.032);
   assert.strictEqual(result.zhuanhua_cengci.ke_sunhao, 0.008);
   assert.strictEqual(result.neihao.ke_sunhao, 0.008);
-  assert.ok(result.neihao.yuanyin.includes('杀敌一千自损八百'), '克战损耗应写入内耗原因');
+  assert.ok(result.neihao.yuanyin.includes('生克转换的天然耗散'), '克边耗散应写入内耗原因');
   // 戌藏丁火（余气0.034）→ 火初始能量不再为0（大王拍板：地支藏干有初始能量）
   assert.strictEqual(result.wuxing['火'], 0.034);
   assert.ok(result.canggan_mingxi.some(c => c.canggan === '丁' && c.dizhi === '戌' && c.weizhi === '余气'), '戌藏丁火应出现在藏干明细');

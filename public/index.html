@@ -764,8 +764,8 @@ function renderResult(r, inputs) {
       </div>
       ${(r.zhuanhua_cengci && r.zhuanhua_cengci.ke_sunhao > 0) ? `
       <div class="util-row">
-        <span class="util-label">克战损耗</span>
-        <span class="util-val" style="font-weight:400;color:var(--ink2)">克边导流耗散 ${Math.round(r.zhuanhua_cengci.ke_sunhao*1000)/10}%（杀敌一千自损八百）</span>
+        <span class="util-label">克边耗散</span>
+        <span class="util-val" style="font-weight:400;color:var(--ink2)">克边导流耗散 ${Math.round(r.zhuanhua_cengci.ke_sunhao*1000)/10}%（生克转换的天然耗散）</span>
       </div>` : ''}
       ${(r.zhuanhua_cengci && r.zhuanhua_cengci.pingjing) ? `
       <div class="util-row">
