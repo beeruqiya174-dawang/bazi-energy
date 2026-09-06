@@ -58,6 +58,7 @@ const NARRATIVE_SYSTEM = `你是能量图谱的解读撰写者。你会收到一
 - 能量转化采用体用流模型：印比食为体（源），财官为用（汇），世俗流（shisu_liu，体流向财官）与内在流（neizai_liu，用回流滋养日主，如官印相生）并行——解读时按 shisu_zhanbi 点明外向/向内的比重倾向
 - 若 zhuanhua_cengci.pingjing 非空：这是转化瓶颈（流网络最小割，管道最窄处），必须用大白话点明——瓶颈在哪个环节、卡住的是输送还是接收（管宽小=该环节桶容或管道窄，能量过不去）
 - 若 zhuanhua_cengci.ke_sunhao > 0：克边导流有天然耗散（食伤制杀/和官）——生克是五行的天然能量模式，不是坏事；以中性口吻描述转换中的自然耗散，不用对抗、战斗类措辞
+- 若 zhuanhua_cengci.zhidongli 存在：这是「努力能力」的盘面映射（五维几何均值×连通×内耗折扣）——努力不是外部常数，不是所有人都有努力的能力；解读时点明最薄弱的维度（比劫主动/食伤创造/财燃料/官杀纪律/印续航），几何均值取短板
 - 若 genqi_cengci 为有气无根（承重系数0.5）或无根无气（承重系数0）：必须点明「日主担不起财官」，格局再好也要按系数打折；有根则可点明身能任财官
 - 若 genqi_cengci.congge 为 true（无根无气 但 财官通道已开 且 转化功率≥0.5）：必须点明这是从格——按 congge_ming 区分从财官/从杀/从财，弃命相从、不担而顺，从得真者反主大富大贵的极少数
 - 只输出解读正文，不加标题、不加引号、不换行、不加任何格式符号`;
@@ -204,6 +205,21 @@ function templateJieda(r) {
     // 财生官先导滋养（V7.1）：财先滋养官，官厚则管道变宽
     if (cc.ziyang_liang > 0) {
       parts.push(`财的能量先经财生官涌入官侧（滋养量${cc.ziyang_liang}，官桶有效实体增至${cc.ziyang_guan_hou}）——资本先垫高了官的容量，食伤到官的管道随之变宽，这就是「财旺生官」的流模型表达${(!cc.cai_tongdao && cc.guan_tongdao) ? '；财通道虽未开，其能量仍顺生入贵路，没有白占' : ''}。`);
+    }
+    // 致动力综合指数（V7.2）：努力能力是盘面函数，不是外部常数
+    if (typeof cc.zhidongli === 'number') {
+      const z = cc.zhidongli_caps;
+      const dims = [
+        { n: '主动（比劫）', v: z.bijie }, { n: '创造（食伤）', v: z.shishang },
+        { n: '燃料（财）', v: z.cai }, { n: '纪律（官杀）', v: z.guansha }, { n: '续航（印）', v: z.yin }
+      ].sort((a, b) => a.v - b.v);
+      const weakest = dims[0], second = dims[1];
+      let zText;
+      if (cc.zhidongli >= 0.5) zText = '把想法推到落地的整套引擎都在，属于「努力本身就是天赋」的结构';
+      else if (cc.zhidongli >= 0.3) zText = '具备稳定的成事驱动力，中上水平';
+      else if (cc.zhidongli >= 0.15) zText = '驱动力中等，成事依赖把能量用在对的维度上';
+      else zText = '驱动力偏弱，硬拼不如借势——找到能补足短板的合作结构更划算';
+      parts.push(`致动力${cc.zhidongli}（几何均值${cc.zhidongli_geomMean} × 连通${cc.zhidongli_connectivity} × 内耗折扣${cc.zhidongli_neihaoFactor}）：${zText}。五维中最薄的是${weakest.n}${weakest.v}，其次是${second.n}${second.v}——几何均值取的是短板，这两维决定努力的天花板。`);
     }
     // 转化瓶颈（最小割）
     if (cc.pingjing) {

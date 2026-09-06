@@ -772,6 +772,19 @@ function renderResult(r, inputs) {
         <span class="util-label">转化瓶颈</span>
         <span class="util-val" style="font-weight:400;color:var(--ink2)">${r.zhuanhua_cengci.pingjing}（管道最窄处）</span>
       </div>` : ''}
+      ${(r.zhuanhua_cengci && typeof r.zhuanhua_cengci.zhidongli === 'number') ? (() => {
+        const z = r.zhuanhua_cengci.zhidongli_caps;
+        const dims = [['比劫·主动', z.bijie], ['食伤·创造', z.shishang], ['财·燃料', z.cai], ['官杀·纪律', z.guansha], ['印·续航', z.yin]].sort((a, b) => a[1] - b[1]);
+        return `
+      <div class="util-row">
+        <span class="util-label">致动力</span>
+        <span class="util-val">${r.zhuanhua_cengci.zhidongli} <span style="font-weight:400;color:var(--ink2)">（几何${r.zhuanhua_cengci.zhidongli_geomMean} × 连通${r.zhuanhua_cengci.zhidongli_connectivity} × 内耗折扣${r.zhuanhua_cengci.zhidongli_neihaoFactor}；短板：${dims[0][0]}${dims[0][1]}）</span></span>
+      </div>
+      <div class="util-row">
+        <span class="util-label">五维饱和</span>
+        <span class="util-val" style="font-weight:400;color:var(--ink2)">${dims.map(d => `${d[0]}${d[1]}`).join(' · ')}</span>
+      </div>`;
+      })() : ''}
       ${zhuxian.length ? `
       <div class="util-row">
         <span class="util-label">生克主线</span>

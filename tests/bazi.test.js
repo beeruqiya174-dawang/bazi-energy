@@ -75,7 +75,23 @@ test('案例一：甲寅 己巳 丙子 壬辰（用户本人基准八字）', ()
     shi_guishu: false,
     shisu_liu: 0.053, neizai_liu: 0.053, shuru_liu: 0.014,
     ke_liu: 0, ke_sunhao: 0, pingjing: '金生水管宽0.014',
-    ziyang_liang: 0.014, ziyang_guan_hou: 0.053
+    ziyang_liang: 0.014, ziyang_guan_hou: 0.053,
+    // V7.2 致动力：丙火日主 → 比劫火0.48/食伤土0.345/财金0.014/官水0.039/印木0.095
+    // 五维饱和：火0.992 土0.968 金0.131 水0.323 木0.613；几何均值=product^(1/5)=0.478
+    // xitongList（伤官佩印/杀制群比）都不在 8 大主系统内 → sysCount=0, 连通=0.5
+    // 内耗0.027/捕获0.973≈0.028 → 内耗折扣0.972
+    // 致动力 = 0.478 × 0.5 × 0.972 = 0.232
+    zhidongli: 0.232, zhidongli_geomMean: 0.478, zhidongli_connectivity: 0.5,
+    zhidongli_neihaoFactor: 0.972, zhidongli_sysCount: 0,
+    zhidongli_caps: { bijie: 0.992, shishang: 0.968, cai: 0.131, guansha: 0.323, yin: 0.613 },
+    // V7.2 长期均衡：纯生环（无制/和系统→克边不参与）各桶摊平至均值 0.973/5=0.195，能量守恒（haosang=0）。
+    // 变化：水+0.156、金+0.181、木+0.099（被环长期喂养），火-0.285、土-0.15（被摊出）——
+    // 「火土旺」是瞬时结构，长期均衡下金水木都升到同一水平。
+    changqi_junheng: {
+      junheng_zhi: 0.195, haosang_zong: 0, shoulian_bushu: 34,
+      zhongzhi: { 木: 0.194, 火: 0.195, 土: 0.195, 金: 0.195, 水: 0.195 },
+      bianhua: { 木: 0.099, 火: -0.285, 土: -0.15, 金: 0.181, 水: 0.156 }
+    }
   });
   // 根气层次：巳中丙本气强根 + 寅中丙中气弱根 → 有根，承重系数1
   assert.deepStrictEqual(result.genqi_cengci, {

@@ -91,8 +91,8 @@ console.log('  - 官贵 + 有效功率≥0.50:   ' + (100*byPowerAt(0.50, 3)/tot
 console.log('  - 双全 + 有效功率≥0.50:   ' + (100*byPowerAt(0.50, 4)/total).toFixed(2) + '%  ← 顶级 CEO 静态底');
 console.log('动态（30~50 岁流年大运放大）:');
 console.log('  - 大运十年一换，50 年 5 步大运；约 1/3 步能踩中"用神当令"');
-console.log('  - 实际抵达率 ≈ 静态分位 × 1/3 × 个人努力系数');
-console.log('  - 用户是乙卯（CEO 千人员工+5M 薪）→ 静态 ~2-3% × 1/3 ≈ 1% 真实抵达');
+console.log('  - 实际抵达率 ≈ 静态分位 × 1/3 × 致动力条件（V7.2：努力能力=盘面函数，见 verify-zhidongli-percentile.js）');
+console.log('  - 用户是乙卯（CEO 千人员工+5M 薪）→ 静态候选17.17% ∧ 致动力≥0.231 → 2.99% × 1/3 ≈ 1% 真实抵达');
 
 function byPowerAt(thr, lmin) {
   let c = 0;
